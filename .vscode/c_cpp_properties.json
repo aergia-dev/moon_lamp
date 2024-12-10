@@ -3,7 +3,25 @@
         {
             "name": "Mac",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                 "${env:IDF_PATH}/components/**",
+                "${env:IDF_PATH}/components/esp_wifi/include",
+                "${env:IDF_PATH}/components/esp_system/include",
+                "${env:IDF_PATH}/components/freertos/FreeRTOS-Kernel/include",
+                "${env:IDF_PATH}/components/freertos/esp_additions/include/freertos",
+                "${env:IDF_PATH}/components/esp_driver*",
+                "${env:IDF_PATH}/components/soc/esp32/include",
+                "${env:IDF_PATH}/components/hal/include",
+                "${env:IDF_PATH}/components/hal/esp32/include",
+                "${env:IDF_PATH}/components/esp_rom/include",
+                "${env:IDF_PATH}/components/esp_common/include",
+                "${env:IDF_PATH}/components/esp_hw_support/include",
+                "${env:IDF_PATH}/components/esp_timer/include",
+                "${env:IDF_PATH}/components/soc/include",
+                "${env:IDF_PATH}/components/newlib/platform_include",
+                "${env:IDF_PATH}/components/heap/include",
+                "${config:idf.espIdfPath}/components/**"
+                // "${config:idf.espIdfPathWin}/components/**"
             ],
             "defines": [],
             "macFrameworkPath": [

@@ -1,6 +1,7 @@
 /* Includes */
 #include "common.h"
 #include "gap.h"
+#include "gatt_svc.h"
 
 /* Library function declarations */
 void ble_store_config_init(void);
@@ -50,4 +51,37 @@ void nimble_host_task(void *param)
 
     /* Clean up at exit */
     vTaskDelete(NULL);
+}
+
+void init_nimble(void)
+{
+    int ret = nimble_port_init();
+    if (ret != ESP_OK)
+    {
+        ESP_LOGE(TAG, "failed to initialize nimble stack, error code: %d ",
+                 ret);
+        return;
+    }
+
+    /* GAP service initialization */
+    int rc = gap_init();
+    if (rc != 0)
+    {
+        ESP_LOGE(TAG, "failed to initialize GAP service, error code: %d", rc);
+        return;
+    }
+
+    /* GATT server initialization */
+    rc = gatt_svc_init();
+    if (rc != 0)
+    {
+        ESP_LOGE(TAG, "failed to initialize GATT server, error code: %d", rc);
+        return;
+    }
+
+    /* NimBLE host configuration initialization */
+    nimble_host_config_init();
+
+    /* Start NimBLE host task thread and return */
+    xTaskCreate(nimble_host_task, "NimBLE Host", 4 * 1024, NULL, 5, NULL);
 }

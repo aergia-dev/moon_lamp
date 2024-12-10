@@ -1,0 +1,11 @@
+enum {
+    LED_OFF = 0x0100,
+    LED_ON = 0x0101,
+    BRIGHTNESS = 0x0102,
+   // CONT_BRIGHTER = 0x0103,
+    CHANGE_COLOR = 0x0104,
+    SAVE_COLOR = 0x0105,
+    RESET = 0x0106,
+    READ_COLOR = 0x0107,
+    READ_LIGHTONOFF = 0x0108,
+};

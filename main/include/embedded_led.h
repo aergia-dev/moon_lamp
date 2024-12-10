@@ -17,8 +17,8 @@
 
 /* Public function declarations */
 uint8_t get_led_state(void);
-void led_on(void);
-void led_off(void);
-void led_init(void);
+void embedded_led_on(void);
+void embedded_led_off(void);
+void embedded_led_init(void);
 
 #endif // LED_H

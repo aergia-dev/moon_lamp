@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Unlicense OR CC0-1.0
  */
 /* Includes */
-#include "led.h"
+#include "embedded_led.h"
 #include "common.h"
 
 /* Private variables */
@@ -19,7 +19,8 @@ uint8_t get_led_state(void) { return led_state; }
 
 #ifdef CONFIG_BLINK_LED_STRIP
 
-void led_on(void) {
+void embedded_led_on(void)
+{
     /* Set the LED pixel using RGB from 0 (0%) to 255 (100%) for each color */
     led_strip_set_pixel(led_strip, 0, 16, 16, 16);
 
@@ -30,7 +31,8 @@ void led_on(void) {
     led_state = true;
 }
 
-void led_off(void) {
+void embedded_led_off(void)
+{
     /* Set all LED off to clear all pixels */
     led_strip_clear(led_strip);
 
@@ -38,7 +40,8 @@ void led_off(void) {
     led_state = false;
 }
 
-void led_init(void) {
+void embedded_led_init(void)
+{
     ESP_LOGI(TAG, "example configured to blink addressable led!");
     /* LED strip initialization with the GPIO and pixels number*/
     led_strip_config_t strip_config = {
@@ -63,7 +66,7 @@ void led_init(void) {
 #error "unsupported LED strip backend"
 #endif
     /* Set all LED off to clear all pixels */
-    led_off();
+    embedded_led_off();
 }
 
 #elif CONFIG_BLINK_LED_GPIO
@@ -72,7 +75,8 @@ void led_on(void) { gpio_set_level(CONFIG_BLINK_GPIO, true); }
 
 void led_off(void) { gpio_set_level(CONFIG_BLINK_GPIO, false); }
 
-void led_init(void) {
+void led_init(void)
+{
     ESP_LOGI(TAG, "example configured to blink gpio led!");
     gpio_reset_pin(CONFIG_BLINK_GPIO);
     /* Set the GPIO as a push/pull output */

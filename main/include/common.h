@@ -31,6 +31,6 @@
 
 /* Defines */
 #define TAG "NimBLE_Connection"
-#define DEVICE_NAME "NimBLE_CONN"
+#define DEVICE_NAME "Sleep Light"
 
 #endif // COMMON_H
