@@ -10,7 +10,7 @@
 #include "nvs_storage.h"
 
 static const char *TAG = "sleep-light";
-#define LED_CNT 23
+#define LED_CNT 15 // 23
 #define CONT_STEP 20
 #define LED_GPIO_NUM 21
 int using_led_cnt = 0;
@@ -27,6 +27,33 @@ static rmt_transmit_config_t tx_config = {
     .loop_count = 0, // no transfer loop
 };
 static rmt_channel_handle_t led_chan = NULL;
+
+static uint8_t brightness = 100;
+
+uint8_t get_brightness(void)
+{
+    return brightness;
+}
+
+void set_brightness(uint8_t v)
+{
+    brightness = v;
+}
+
+bool get_light_state(void)
+{
+    return light_state;
+}
+void set_light_state(bool is_on)
+{
+    light_state = is_on;
+}
+
+uint32_t get_saved_color_uint32(void)
+{
+    ARGB color = {.code = read_color_nvs()};
+    return color.code;
+}
 
 void update_led_strip()
 {
@@ -45,6 +72,11 @@ void change_color(ARGB color, int led_cnt)
     update_led_strip();
 }
 
+void change_color_uint32(uint32_t c)
+{
+    ARGB color = {.code = c};
+    change_color(color, LED_CNT);
+}
 void limit_val(ARGB *dst, const ARGB_float *src, ARGB limit, bool is_inc)
 {
 #define UPPER_LIMIT(x, limit) ((x > limit) ? limit : x)
@@ -108,7 +140,6 @@ void light_chage_color_dimming(const int step, const int duration, ARGB from_col
 
 void light_on()
 {
-
     ARGB to_color = {.code = read_color_nvs()};
     change_color(to_color, LED_CNT);
     light_state = true;
@@ -143,6 +174,34 @@ void light_off_dimming()
     const int duration_us = 500000;
     light_chage_color_dimming(step, duration_us, from_color, to_color, false);
     light_state = false;
+}
+
+static void cont_brightness(uint8_t brightness)
+{
+}
+
+bool ble_cont_light(led_status_t *status)
+{
+    if (status->is_on)
+    {
+        light_off_dimming();
+    }
+    else
+    {
+        light_on_dimming();
+    }
+    if (status->brightness > 0)
+    {
+        cont_brightness(status->brightness);
+    }
+
+    if (status->color > 0)
+    {
+        ARGB color = {.code = status->color};
+        change_color(color, LED_CNT);
+    }
+
+    return true;
 }
 
 void toggle_light()

@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "future": "c",
-        "regex": "c"
+        "regex": "c",
+        "common.h": "c",
+        "ble_protocol.h": "c"
     }
 }

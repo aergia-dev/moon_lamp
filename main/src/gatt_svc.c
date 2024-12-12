@@ -7,6 +7,7 @@
 #include "gatt_svc.h"
 #include "common.h"
 #include "embedded_led.h"
+#include "ble_protocol.h"
 
 /* Private function declarations */
 static int sleep_light_chr_access(uint16_t conn_handle, uint16_t attr_handle,
@@ -77,17 +78,92 @@ static int sleep_light_chr_access(uint16_t conn_handle, uint16_t attr_handle,
         /* Verify attribute handle */
         if (attr_handle == sleep_light_chr_val_handle)
         {
-            ESP_LOGI(TAG, "attr_handle == sleep_light_chr_val_handle");
+            handler_rsp_t rsp = {
+                .is_success = false,
+                .data = 0,
+                .len = 0,
+            };
+
+            ESP_LOGI(TAG, "read - attr_handle == sleep_light_chr_val_handle");
 
             ESP_LOGI(TAG, "received: %x, %x, %x, %x", (int)ctxt->om->om_data[0], (int)ctxt->om->om_data[1], (int)ctxt->om->om_data[2], (int)ctxt->om->om_data[3]);
-            /* Update access buffer value */
-            sleep_light_chr_val[1] = 0x8; // get_heart_rate();
-            rc = os_mbuf_append(ctxt->om, &sleep_light_chr_val,
-                                sizeof(sleep_light_chr_val));
+
+            if (ctxt->om->om_data[0] == 0x0B && ctxt->om->om_data[1] == 0x00)
+            {
+                handler_req_t req = {
+                    .cmd = ctxt->om->om_data[2] << 8 | ctxt->om->om_data[3],
+                    .data = &ctxt->om->om_data[4],
+                    .len = ctxt->om->om_len - 2,
+                };
+
+                process_command(&req, &rsp);
+
+                // uint16_t *cmd = (uint16_t *)&ctxt->om->om_data[2];
+                // ESP_LOGI(TAG, "cmd: %x", *cmd);
+            }
+            else
+            {
+                ESP_LOGE(TAG, "write cmd should be 0x0B00xxxx 0x%x%x", sleep_light_chr_val[0], sleep_light_chr_val[1]);
+            }
+
+            rc = os_mbuf_append(ctxt->om, &rsp.data,
+                                0);
+
+            ESP_LOGI(TAG, "read - rc: %d", rc);
+            if (rsp.data != NULL)
+            {
+                free(rsp.data);
+            }
+
             return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
         }
         goto error;
+    case BLE_GATT_ACCESS_OP_WRITE_CHR:
+        if (conn_handle != BLE_HS_CONN_HANDLE_NONE)
+        {
+            ESP_LOGI(TAG, "characteristic write; conn_handle=%d attr_handle=%d",
+                     conn_handle, attr_handle);
+        }
+        else
+        {
+            ESP_LOGI(TAG, "characteristic write by nimble stack; attr_handle=%d",
+                     attr_handle);
+        }
 
+        /* Verify attribute handle */
+        if (attr_handle == sleep_light_chr_val_handle)
+        {
+            ESP_LOGI(TAG, "write - attr_handle == sleep_light_chr_val_handle");
+            ESP_LOGI(TAG, "write received: %x, %x, %x, %x", (int)ctxt->om->om_data[0], (int)ctxt->om->om_data[1], (int)ctxt->om->om_data[2], (int)ctxt->om->om_data[3]);
+
+            handler_req_t req = {
+                .cmd = ctxt->om->om_data[0] << 8 | ctxt->om->om_data[1],
+                .data = &ctxt->om->om_data[2],
+                .len = ctxt->om->om_len - 2,
+            };
+
+            handler_rsp_t rsp = {
+                .is_success = false,
+                .data = 0,
+                .len = 0,
+            };
+
+            process_command(&req, &rsp);
+
+            ESP_LOGI(TAG, "rsp->len: %d", rsp.len);
+            rc = os_mbuf_append(ctxt->om, &rsp.data,
+                                0);
+
+            ESP_LOGI(TAG, "write - rc: %d", rc);
+            if (rsp.data != NULL)
+            {
+                free(rsp.data);
+            }
+
+            return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
+        }
+
+        goto error;
     /* Unknown event */
     default:
         goto error;

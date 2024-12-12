@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include "ble_protocol.h"
 
 typedef enum
 {
@@ -188,3 +189,11 @@ void toggle_light();
 // void get_current_color(uint8_t *color);
 // bool get_light_on_off();
 // ARGB fromRGB(uint8_t r, uint8_t g, uint8_t b);
+
+bool ble_cont_light(led_status_t *status);
+void set_light_state(bool is_on);
+bool get_light_state(void);
+
+uint8_t get_brightness(void);
+uint32_t get_saved_color_uint32(void);
+void change_color_uint32(uint32_t c);
