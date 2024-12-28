@@ -93,3 +93,17 @@ void write_color_nvs(uint32_t color)
     ESP_LOGI(NVS_TAG, "write color to nvs %" PRIu32, color);
     nvs_write_uint32("saved_color", color);
 }
+
+uint32_t read_ble_pwd_nvs()
+{
+#define DEFAULT_BLE_PWD "1233456"
+
+    uint32_t saved_color = nvs_read_uint32("ble_pwd", DEFAULT_BLE_PWD);
+    return saved_color;
+}
+
+void write_ble_pwd_nvs(uint32_t color)
+{
+    ESP_LOGI(NVS_TAG, "write ble_pwd to nvs %" PRIu32, color);
+    nvs_write_uint32("ble_pwd", color);
+}
