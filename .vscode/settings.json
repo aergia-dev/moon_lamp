@@ -3,6 +3,7 @@
         "future": "c",
         "regex": "c",
         "common.h": "c",
-        "ble_protocol.h": "c"
+        "ble_protocol.h": "c",
+        "nvs_storage.h": "c"
     }
 }
