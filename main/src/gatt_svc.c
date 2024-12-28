@@ -13,13 +13,21 @@
 static int sleep_light_chr_access(uint16_t conn_handle, uint16_t attr_handle,
                                   struct ble_gatt_access_ctxt *ctxt, void *arg);
 
+static handler_rsp_t rsp = {
+    .is_success = false,
+    .data = {
+        0,
+    },
+    .len = 0,
+};
+
 /* Private variables */
 static const ble_uuid128_t sleep_light_svc_uuid =
     BLE_UUID128_INIT(0xA1, 0xB2, 0xC3, 0xD4,
                      0x00, 0x00, 0x10, 0x00,
                      0x80, 0x00, 0x00, 0x80,
                      0x5F, 0x9B, 0x34, 0xFB);
-static uint8_t sleep_light_chr_val[4] = {0};
+
 static uint16_t sleep_light_chr_val_handle;
 
 static const ble_uuid128_t sleep_light_chr_uuid =
@@ -78,14 +86,7 @@ static int sleep_light_chr_access(uint16_t conn_handle, uint16_t attr_handle,
         /* Verify attribute handle */
         if (attr_handle == sleep_light_chr_val_handle)
         {
-            handler_rsp_t rsp = {
-                .is_success = false,
-                .data = 0,
-                .len = 0,
-            };
-
             ESP_LOGI(TAG, "read - attr_handle == sleep_light_chr_val_handle");
-
             ESP_LOGI(TAG, "received: %x, %x, %x, %x", (int)ctxt->om->om_data[0], (int)ctxt->om->om_data[1], (int)ctxt->om->om_data[2], (int)ctxt->om->om_data[3]);
 
             if (ctxt->om->om_data[0] == 0x0B && ctxt->om->om_data[1] == 0x00)
@@ -96,24 +97,30 @@ static int sleep_light_chr_access(uint16_t conn_handle, uint16_t attr_handle,
                     .len = ctxt->om->om_len - 2,
                 };
 
-                process_command(&req, &rsp);
-
-                // uint16_t *cmd = (uint16_t *)&ctxt->om->om_data[2];
-                // ESP_LOGI(TAG, "cmd: %x", *cmd);
+                if (req.cmd == READ_STATUS)
+                {
+                    ESP_LOGI(TAG, "read status");
+                    rc = os_mbuf_append(ctxt->om, &rsp.is_success,
+                                        1);
+                    rc = os_mbuf_append(ctxt->om, &rsp.data,
+                                        rsp.len);
+                }
+                else
+                {
+                    ESP_LOGE(TAG, "cmd is not support %x", req.cmd);
+                    rc = 0;
+                }
             }
             else
             {
-                ESP_LOGE(TAG, "write cmd should be 0x0B00xxxx 0x%x%x", sleep_light_chr_val[0], sleep_light_chr_val[1]);
+                // int result = 0;
+                // rc = os_mbuf_append(ctxt->om, &result,
+                // 1);
+                rc = 0;
+                ESP_LOGE(TAG, "read cmd should be 0x0B00xxxx 0x%x%x", ctxt->om->om_data[0], ctxt->om->om_data[1]);
             }
-
-            rc = os_mbuf_append(ctxt->om, &rsp.data,
-                                0);
 
             ESP_LOGI(TAG, "read - rc: %d", rc);
-            if (rsp.data != NULL)
-            {
-                free(rsp.data);
-            }
 
             return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
         }
@@ -142,23 +149,14 @@ static int sleep_light_chr_access(uint16_t conn_handle, uint16_t attr_handle,
                 .len = ctxt->om->om_len - 2,
             };
 
-            handler_rsp_t rsp = {
-                .is_success = false,
-                .data = 0,
-                .len = 0,
-            };
-
             process_command(&req, &rsp);
 
             ESP_LOGI(TAG, "rsp->len: %d", rsp.len);
-            rc = os_mbuf_append(ctxt->om, &rsp.data,
-                                0);
+
+            rc = os_mbuf_append(ctxt->om, &rsp.is_success,
+                                1);
 
             ESP_LOGI(TAG, "write - rc: %d", rc);
-            if (rsp.data != NULL)
-            {
-                free(rsp.data);
-            }
 
             return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
         }

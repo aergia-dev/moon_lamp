@@ -7,7 +7,7 @@
 #include "driver/gpio.h"
 #include "sleep_light.h"
 
-#define GPIO_INPUT_IO_0 20
+#define GPIO_INPUT_IO_0 10
 
 #define GPIO_INPUT_PIN_SEL (1ULL << GPIO_INPUT_IO_0)
 #define ESP_INTR_FLAG_DEFAULT 0

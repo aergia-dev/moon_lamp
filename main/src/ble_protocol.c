@@ -32,10 +32,11 @@ static void handler_write_status(handler_req_t *req, handler_rsp_t *rsp)
 
     led_status_t src;
     memcpy(&src, req->data, sizeof(led_status_t));
-    ble_cont_light(&src);
+    ESP_LOGI(TAG, "write - led status");
+    ESP_LOGI(TAG, "is_on: %d, brightness: %d, color: %lu", (int)src.is_on, (int)src.brightness, src.color);
+    ble_cont_light_write(&src);
 
     rsp->is_success = true;
-    rsp->data = NULL;
     rsp->len = 0;
 }
 
@@ -47,9 +48,18 @@ static void handler_read_status(handler_req_t *req, handler_rsp_t *rsp)
     status.color = get_saved_color_uint32();
 
     rsp->is_success = true;
-    rsp->data = malloc(sizeof(led_status_t));
-    memcpy(rsp->data, &status, sizeof(led_status_t));
-    rsp->len = sizeof(led_status_t);
+    if (HANDLER_RSP_SZ >= sizeof(led_status_t))
+    {
+        memcpy(rsp->data, &status, sizeof(led_status_t));
+        rsp->len = sizeof(led_status_t);
+        ESP_LOGI(TAG, "read led status");
+        ESP_LOGI(TAG, "is_on: %d, brightness: %d, color: %lu", (int)status.is_on, (int)status.brightness, status.color);
+    }
+    else
+    {
+        rsp->len = 0;
+        ESP_LOGE(TAG, "error: should increase rsp data size to %d", sizeof(led_status_t));
+    }
 }
 
 static void handler_test_color(handler_req_t *req, handler_rsp_t *rsp)
@@ -57,8 +67,11 @@ static void handler_test_color(handler_req_t *req, handler_rsp_t *rsp)
 
     if (req->len == sizeof(led_status_t))
     {
-        led_status_t *status = (led_status_t *)req->data;
-        change_color_uint32(status->color);
+        led_status_t status;
+        memcpy(&status, req->data, sizeof(led_status_t));
+        ESP_LOGI(TAG, "test led status");
+        ESP_LOGI(TAG, "is_on: %d, brightness: %d, color: %lu", (int)status.is_on, (int)status.brightness, status.color);
+        ble_cont_light(&status);
         rsp->is_success = true;
     }
     else
@@ -66,7 +79,6 @@ static void handler_test_color(handler_req_t *req, handler_rsp_t *rsp)
         rsp->is_success = false;
     }
 
-    rsp->data = NULL;
     rsp->len = 0;
 }
 

@@ -7,17 +7,19 @@
 #include "nvs.h"
 #include "driver/rmt_tx.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "nvs_storage.h"
+#include "esp_sleep.h"
 
 static const char *TAG = "sleep-light";
-#define LED_CNT 15 // 23
+#define LED_CNT 10
 #define CONT_STEP 20
 #define LED_GPIO_NUM 21
 int using_led_cnt = 0;
 ARGB current_color;
 
 #define RMT_LED_STRIP_RESOLUTION_HZ 10000000 // 10MHz resolution, 1 tick = 0.1us (led strip needs a high resolution)
-static bool light_state = false;
+static bool _light_state = false;
 static uint8_t led_strip_pixels[LED_CNT * 3];
 static rmt_encoder_handle_t led_encoder = NULL;
 static led_strip_encoder_config_t encoder_config = {
@@ -42,27 +44,31 @@ void set_brightness(uint8_t v)
 
 bool get_light_state(void)
 {
-    return light_state;
+    return _light_state;
 }
+
 void set_light_state(bool is_on)
 {
-    light_state = is_on;
+    _light_state = is_on;
 }
 
 uint32_t get_saved_color_uint32(void)
 {
     ARGB color = {.code = read_color_nvs()};
+    ESP_LOGI(TAG, "get color: red(%x), green(%d), blue(%d)", (int)color.argb.red, (int)color.argb.green, (int)color.argb.blue);
     return color.code;
 }
 
 void update_led_strip()
 {
+    esp_rom_delay_us(50);
     ESP_ERROR_CHECK(rmt_transmit(led_chan, led_encoder, led_strip_pixels, sizeof(led_strip_pixels), &tx_config));
     ESP_ERROR_CHECK(rmt_tx_wait_all_done(led_chan, portMAX_DELAY));
 }
 
 void change_color(ARGB color, int led_cnt)
 {
+    // ESP_LOGI(TAG, "change_color: red(%d), green(%d), blue(%d)", (int)color.argb.red, (int)color.argb.green, (int)color.argb.blue);
     for (int j = 0; j < led_cnt * 3; j += 3)
     {
         led_strip_pixels[j + 0] = color.argb.green;
@@ -70,6 +76,29 @@ void change_color(ARGB color, int led_cnt)
         led_strip_pixels[j + 2] = color.argb.blue;
     }
     update_led_strip();
+}
+
+void change_color_seq(ARGB color, int led_cnt)
+{
+    // 한 번에 처리할 LED 개수 제한
+    const int BATCH_SIZE = 10;
+
+    for (int i = 0; i < led_cnt; i += BATCH_SIZE)
+    {
+        int current_batch = (i + BATCH_SIZE < led_cnt) ? BATCH_SIZE : (led_cnt - i);
+
+        // 현재 배치의 LED들 색상 설정
+        for (int j = i * 3; j < (i + current_batch) * 3; j += 3)
+        {
+            led_strip_pixels[j + 0] = color.argb.green;
+            led_strip_pixels[j + 1] = color.argb.red;
+            led_strip_pixels[j + 2] = color.argb.blue;
+        }
+
+        update_led_strip();
+        // 배치 사이에 짧은 딜레이 추가
+        esp_rom_delay_us(100);
+    }
 }
 
 void change_color_uint32(uint32_t c)
@@ -131,6 +160,7 @@ void light_chage_color_dimming(const int step, const int duration, ARGB from_col
 
         limit_val(&cur_color, &argb_accum, to_color, is_turn_on);
 
+        // change_color(cur_color, LED_CNT);
         change_color(cur_color, LED_CNT);
         esp_rom_delay_us(DELAY_TIME);
     }
@@ -140,55 +170,70 @@ void light_chage_color_dimming(const int step, const int duration, ARGB from_col
 
 void light_on()
 {
+    set_light_state(true);
     ARGB to_color = {.code = read_color_nvs()};
     change_color(to_color, LED_CNT);
-    light_state = true;
 }
 
 void light_off()
 {
+    set_light_state(false);
     ARGB color = {.code = Black};
     change_color(color, LED_CNT);
-    light_state = false;
 }
 
 void light_on_dimming()
 {
+    set_light_state(true);
+    ESP_LOGI(TAG, "light_on_dimming()");
     ARGB to_color = {.code = read_color_nvs()};
     ARGB from_color = {.code = 0};
 
     const int step = 100;
     const int duration_us = 500000;
     light_chage_color_dimming(step, duration_us, from_color, to_color, true);
-    light_state = true;
 }
 
 void light_off_dimming()
 {
-    ARGB from_color = {.code = 0};
-    from_color.code = read_color_nvs();
+    set_light_state(false);
+    ESP_LOGI(TAG, "light_off_dimming()");
+    ARGB from_color = {.code = read_color_nvs()};
     ARGB to_color = {.code = 0};
 
-    to_color.code = Black;
     const int step = 100;
     const int duration_us = 500000;
     light_chage_color_dimming(step, duration_us, from_color, to_color, false);
-    light_state = false;
 }
 
 static void cont_brightness(uint8_t brightness)
 {
+    ESP_LOGI(TAG, "cont_brightness(%d)", (int)brightness);
+    //..
+}
+
+bool write_led_status(led_status_t *status)
+{
+    // write to nvs
+    return true;
+}
+
+bool ble_cont_light_write(led_status_t *status)
+{
+    ble_cont_light(status);
+    write_led_status(status);
+    return true;
 }
 
 bool ble_cont_light(led_status_t *status)
 {
     if (status->is_on)
     {
-        light_off_dimming();
+        light_on_dimming();
     }
     else
     {
-        light_on_dimming();
+        light_off_dimming();
     }
     if (status->brightness > 0)
     {
@@ -206,7 +251,7 @@ bool ble_cont_light(led_status_t *status)
 
 void toggle_light()
 {
-    if (light_state)
+    if (get_light_state())
     {
         light_off_dimming();
     }

@@ -16,10 +16,11 @@ typedef struct
     uint8_t len;
 } handler_req_t;
 
+#define HANDLER_RSP_SZ 1024
 typedef struct
 {
     bool is_success;
-    uint8_t *data;
+    uint8_t data[HANDLER_RSP_SZ];
     uint8_t len;
 } handler_rsp_t;
 

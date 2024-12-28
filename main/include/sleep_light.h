@@ -190,6 +190,7 @@ void toggle_light();
 // bool get_light_on_off();
 // ARGB fromRGB(uint8_t r, uint8_t g, uint8_t b);
 
+bool ble_cont_light_write(led_status_t *status);
 bool ble_cont_light(led_status_t *status);
 void set_light_state(bool is_on);
 bool get_light_state(void);
