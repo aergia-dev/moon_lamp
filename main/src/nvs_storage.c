@@ -3,6 +3,8 @@
 #include "nvs_flash.h"
 #include "nvs.h"
 #include "esp_log.h"
+#include "string.h"
+#include "common_info.h"
 #define NVS_TAG "NVS"
 
 void nvs_init()
@@ -141,7 +143,7 @@ void write_color_nvs(uint32_t color)
 
 uint32_t read_ble_pwd_nvs()
 {
-#define DEFAULT_BLE_PWD "1233456"
+#define DEFAULT_BLE_PWD 1233456
 
     uint32_t saved_color = nvs_read_uint32("ble_pwd", DEFAULT_BLE_PWD);
     return saved_color;
@@ -153,16 +155,10 @@ void write_ble_pwd_nvs(uint32_t color)
     nvs_write_uint32("ble_pwd", color);
 }
 
-void read_device_name()
+void read_device_name(char *name)
 {
-    bool ret = false;
-    const size_t length = 15;
-    char default_name[length] = {
-        "sleep_light"};
-
-    char name[length] = {
-        ' ',
-    };
+    size_t length = get_device_name_length();
+    char *default_name = "sleep_light";
 
     if (nvs_read_str("device_name", default_name, name, &length))
     {

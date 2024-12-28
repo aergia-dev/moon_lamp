@@ -7,6 +7,8 @@
 #include "gap.h"
 #include "common.h"
 #include "embedded_led.h"
+#include "nvs_storage.h"
+#include "common_info.h"
 
 /* Private function declarations */
 inline static void format_addr(char *addr_str, uint8_t addr[]);
@@ -272,12 +274,13 @@ int gap_init(void)
     /* Initialize GAP service */
     ble_svc_gap_init();
 
+    char *device_name = get_device_name();
     /* Set GAP device name */
-    rc = ble_svc_gap_device_name_set(DEVICE_NAME);
+    rc = ble_svc_gap_device_name_set(device_name);
     if (rc != 0)
     {
         ESP_LOGE(TAG, "failed to set device name to %s, error code: %d",
-                 DEVICE_NAME, rc);
+                 device_name, rc);
         return rc;
     }
 

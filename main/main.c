@@ -9,8 +9,6 @@
 #include "embedded_led.h"
 #include "common.h"
 
-// static const char *TAG = "main";
-
 void app_main(void)
 {
     nvs_init();

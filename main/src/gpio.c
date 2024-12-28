@@ -6,10 +6,8 @@
 #include "freertos/queue.h"
 #include "driver/gpio.h"
 #include "sleep_light.h"
+#include "common_info.h"
 
-#define GPIO_INPUT_IO_0 10
-
-#define GPIO_INPUT_PIN_SEL (1ULL << GPIO_INPUT_IO_0)
 #define ESP_INTR_FLAG_DEFAULT 0
 
 static QueueHandle_t gpio_evt_queue = NULL;
@@ -33,12 +31,13 @@ static void IRAM_ATTR gpio_isr_handler(void *arg)
 static void gpio_task(void *arg)
 {
     uint32_t io_num = 0;
+    uint32_t gpio_num = get_touch_gpio();
 
     for (;;)
     {
         if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY))
         {
-            if (io_num == GPIO_INPUT_IO_0)
+            if (io_num == gpio_num)
             {
                 toggle_light();
                 // printf("in gpio handler\n");
@@ -50,10 +49,11 @@ static void gpio_task(void *arg)
 void gpio_init()
 {
     gpio_config_t io_conf = {};
+    uint32_t gpio_num = get_touch_gpio();
 
     io_conf.intr_type = GPIO_INTR_POSEDGE;
     // bit mask of the pins, use GPIO4/5 here
-    io_conf.pin_bit_mask = GPIO_INPUT_PIN_SEL;
+    io_conf.pin_bit_mask = (1ULL << gpio_num);
     // set as input mode
     io_conf.mode = GPIO_MODE_INPUT;
     // enable pull-up mode
@@ -64,6 +64,5 @@ void gpio_init()
     xTaskCreate(gpio_task, "gpio_task", 4096, NULL, 10, NULL);
     gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
 
-    gpio_isr_handler_add(GPIO_INPUT_IO_0, gpio_isr_handler, (void *)GPIO_INPUT_IO_0);
-    // gpio_isr_handler_add(GPIO_INPUT_IO_1, gpio_isr_handler, (void*) GPIO_INPUT_IO_1);
+    gpio_isr_handler_add(gpio_num, gpio_isr_handler, (void *)gpio_num);
 }
