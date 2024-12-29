@@ -103,7 +103,7 @@ bool nvs_read_str(char *key, char *default_val, char *read_val, size_t *length)
     return err;
 }
 
-bool nvs_write_str(char *key, char *val)
+bool nvs_write_str_nvs(char *key, char *val)
 {
     esp_err_t err;
     bool ret = true;
@@ -155,7 +155,7 @@ void write_ble_pwd_nvs(uint32_t color)
     nvs_write_uint32("ble_pwd", color);
 }
 
-void read_device_name(char *name)
+void read_device_name_nvs(char *name)
 {
     size_t length = get_device_name_length();
     char *default_name = "sleep_light";
@@ -171,7 +171,7 @@ void read_device_name(char *name)
     }
 }
 
-bool write_device_name(char *name)
+bool write_device_name_nvs(char *name)
 {
-    return nvs_write_str("device_name", name);
+    return nvs_write_str_nvs("device_name", name);
 }

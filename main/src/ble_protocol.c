@@ -6,6 +6,7 @@
 #include <esp_log.h>
 #include <string.h>
 #include "sleep_light.h"
+#include "common_info.h"
 
 static const char *TAG = "BLE_PROTOCOL";
 
@@ -64,7 +65,6 @@ static void handler_read_status(handler_req_t *req, handler_rsp_t *rsp)
 
 static void handler_test_color(handler_req_t *req, handler_rsp_t *rsp)
 {
-
     if (req->len == sizeof(led_status_t))
     {
         led_status_t status;
@@ -82,13 +82,48 @@ static void handler_test_color(handler_req_t *req, handler_rsp_t *rsp)
     rsp->len = 0;
 }
 
-static void handler_write_color(handler_req_t *req, handler_rsp_t *rsp) {}
+static void handler_write_dev_name(handler_req_t *req, handler_rsp_t *rsp)
+{
+    ESP_LOGI(TAG, "handler_write_dev_name");
+    if (req->len == sizeof(led_status_t))
+    {
+        write_dev_name_t name;
+        memcpy(&name, req->data, sizeof(write_dev_name_t));
+        ESP_LOGI(TAG, "write dev name: %s", name.dev_name);
+        set_device_name(name.dev_name);
+        rsp->is_success = true;
+    }
+    else
+    {
+        ESP_LOGI(TAG, "received pkt size is not matched");
+    }
+}
+
+static void handler_write_passkey(handler_req_t *req, handler_rsp_t *rsp)
+{
+    ESP_LOGI(TAG, "handler_write_passkey");
+    if (req->len == sizeof(write_passkey_t))
+    {
+        write_passkey_t passkey;
+        memcpy(&passkey, req->data, sizeof(write_passkey_t));
+        ESP_LOGI(TAG, "write passkey: %" PRIu32, passkey.passkey);
+
+        set_ble_passkey(passkey.passkey);
+        rsp->is_success = true;
+    }
+    else
+    {
+        ESP_LOGI(TAG, "received pkt size is not matched");
+    }
+}
 
 const cmd_map_t cmd_handlers[] = {
     {RESET, handler_reset},
     {WRITE_STATUS, handler_write_status},
     {READ_STATUS, handler_read_status},
     {TEST_COLOR, handler_test_color},
+    {WRITE_DEV_NAME, handler_write_dev_name},
+    {WRITE_PASSKEY, handler_write_passkey},
     {0, NULL},
 };
 
