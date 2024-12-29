@@ -6,6 +6,7 @@
         "ble_protocol.h": "c",
         "nvs_storage.h": "c",
         "string.h": "c",
-        "sleep_light.h": "c"
+        "sleep_light.h": "c",
+        "gap.h": "c"
     }
 }

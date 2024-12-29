@@ -133,6 +133,35 @@ static void start_advertising(void)
     ESP_LOGI(TAG, "advertising started!");
 }
 
+static void ble_gap_passkey_event(uint16_t conn_handle, struct ble_gap_passkey_params *params)
+{
+    uint32_t passkey = get_ble_passkey();
+    struct ble_sm_io pkey = {0};
+    ESP_LOGI(TAG, "ble_gap_passkey_event");
+
+    switch (params->action)
+    {
+    case BLE_SM_IOACT_DISP:
+        pkey.action = params->action;
+        pkey.passkey = passkey;
+        ble_sm_inject_io(conn_handle, &pkey);
+        break;
+    case BLE_SM_IOACT_INPUT:
+        pkey.action = params->action;
+        pkey.passkey = passkey;
+        ble_sm_inject_io(conn_handle, &pkey);
+        break;
+
+    case BLE_SM_IOACT_NUMCMP:
+        pkey.action = params->action;
+        pkey.numcmp_accept = 1;
+        ble_sm_inject_io(conn_handle, &pkey);
+        break;
+    default:
+        ESP_LOGI(TAG, "unkown passkey action: %d", params->action);
+        break;
+    }
+}
 /*
  * NimBLE applies an event-driven model to keep GAP service going
  * gap_event_handler is a callback function registered when calling
@@ -187,6 +216,8 @@ static int gap_event_handler(struct ble_gap_event *event, void *arg)
                     rc);
                 return rc;
             }
+
+            ble_gap_security_initiate(event->connect.conn_handle);
         }
         /* Connection failed, restart advertising */
         else
@@ -194,6 +225,15 @@ static int gap_event_handler(struct ble_gap_event *event, void *arg)
             start_advertising();
         }
         return rc;
+
+    case BLE_GAP_EVENT_ENC_CHANGE:
+        ESP_LOGI(TAG, "security event; status=%d", event->enc_change.status);
+        return rc;
+
+    case BLE_GAP_EVENT_PASSKEY_ACTION:
+        ESP_LOGI(TAG, "BLE_GAP_EVENT_PASSKEY_ACTION");
+        ble_gap_passkey_event(event->passkey.conn_handle, &event->passkey.params);
+        break;
 
     /* Disconnect event */
     case BLE_GAP_EVENT_DISCONNECT:

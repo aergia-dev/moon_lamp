@@ -2,6 +2,7 @@
 #include "common.h"
 #include "gap.h"
 #include "gatt_svc.h"
+#include "host/ble_sm.h"
 
 /* Library function declarations */
 void ble_store_config_init(void);
@@ -36,6 +37,14 @@ void nimble_host_config_init(void)
     ble_hs_cfg.reset_cb = on_stack_reset;
     ble_hs_cfg.sync_cb = on_stack_sync;
     ble_hs_cfg.store_status_cb = ble_store_util_status_rr;
+
+    ble_hs_cfg.sm_io_cap = BLE_SM_IO_CAP_DISP_ONLY;
+    ble_hs_cfg.sm_bonding = 1; // 본딩 활성화
+    ble_hs_cfg.sm_mitm = 1;    // MITM 보호 활성화
+    ble_hs_cfg.sm_sc = 1;      // Secure Connections 활성화
+
+    ble_hs_cfg.sm_our_key_dist = BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID;
+    ble_hs_cfg.sm_their_key_dist = BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID;
 
     /* Store host configuration */
     ble_store_config_init();
