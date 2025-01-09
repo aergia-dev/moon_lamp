@@ -7,6 +7,7 @@
         "nvs_storage.h": "c",
         "string.h": "c",
         "sleep_light.h": "c",
-        "gap.h": "c"
+        "gap.h": "c",
+        "common_info.h": "c"
     }
 }

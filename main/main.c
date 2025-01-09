@@ -8,10 +8,12 @@
 #include "nimble.h"
 #include "embedded_led.h"
 #include "common.h"
+#include "common_info.h"
 
 void app_main(void)
 {
     nvs_init();
+    init_common_info();
     gpio_init();
     light_init();
     light_on();

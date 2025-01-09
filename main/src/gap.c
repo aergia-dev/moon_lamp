@@ -137,25 +137,28 @@ static void ble_gap_passkey_event(uint16_t conn_handle, struct ble_gap_passkey_p
 {
     uint32_t passkey = get_ble_passkey();
     struct ble_sm_io pkey = {0};
-    ESP_LOGI(TAG, "ble_gap_passkey_event");
-
+    ESP_LOGI(TAG, "ble_gap_passkey_event, passkey: %lu", passkey);
+    int r = 0;
     switch (params->action)
     {
     case BLE_SM_IOACT_DISP:
         pkey.action = params->action;
         pkey.passkey = passkey;
-        ble_sm_inject_io(conn_handle, &pkey);
+        r = ble_sm_inject_io(conn_handle, &pkey);
+        ESP_LOGI(TAG, "BLE_SM_IOACT_DISP: %d", r);
         break;
     case BLE_SM_IOACT_INPUT:
         pkey.action = params->action;
         pkey.passkey = passkey;
-        ble_sm_inject_io(conn_handle, &pkey);
+        r = ble_sm_inject_io(conn_handle, &pkey);
+        ESP_LOGI(TAG, "BLE_SM_IOACT_INPUT: %d", r);
         break;
 
     case BLE_SM_IOACT_NUMCMP:
         pkey.action = params->action;
         pkey.numcmp_accept = 1;
-        ble_sm_inject_io(conn_handle, &pkey);
+        r = ble_sm_inject_io(conn_handle, &pkey);
+        ESP_LOGI(TAG, "BLE_SM_IOACT_NUMCMP: %d", r);
         break;
     default:
         ESP_LOGI(TAG, "unkown passkey action: %d", params->action);
@@ -199,25 +202,25 @@ static int gap_event_handler(struct ble_gap_event *event, void *arg)
 
             /* Print connection descriptor and turn on the LED */
             print_conn_desc(&desc);
-            embedded_led_on();
+            // embedded_led_on();
 
             /* Try to update connection parameters */
-            struct ble_gap_upd_params params = {.itvl_min = desc.conn_itvl,
-                                                .itvl_max = desc.conn_itvl,
-                                                .latency = 3,
-                                                .supervision_timeout =
-                                                    desc.supervision_timeout};
-            rc = ble_gap_update_params(event->connect.conn_handle, &params);
-            if (rc != 0)
-            {
-                ESP_LOGE(
-                    TAG,
-                    "failed to update connection parameters, error code: %d",
-                    rc);
-                return rc;
-            }
+            // struct ble_gap_upd_params params = {.itvl_min = desc.conn_itvl,
+            //                                     .itvl_max = desc.conn_itvl,
+            //                                     .latency = 3,
+            //                                     .supervision_timeout =
+            //                                         desc.supervision_timeout};
+            // rc = ble_gap_update_params(event->connect.conn_handle, &params);
+            // if (rc != 0)
+            // {
+            //     ESP_LOGE(
+            //         TAG,
+            //         "failed to update connection parameters, error code: %d",
+            //         rc);
+            //     return rc;
+            // }
 
-            ble_gap_security_initiate(event->connect.conn_handle);
+            // ble_gap_security_initiate(event->connect.conn_handle);
         }
         /* Connection failed, restart advertising */
         else
@@ -227,12 +230,29 @@ static int gap_event_handler(struct ble_gap_event *event, void *arg)
         return rc;
 
     case BLE_GAP_EVENT_ENC_CHANGE:
-        ESP_LOGI(TAG, "security event; status=%d", event->enc_change.status);
+        ESP_LOGI(TAG, "BLE_GAP_EVENT_ENC_CHANGE");
+        rc = ble_gap_conn_find(event->enc_change.conn_handle, &desc);
+        if (rc == 0)
+        {
+            ESP_LOGI(TAG, "Encryption change event; status=%d encrypted=%d",
+                     event->enc_change.status,
+                     desc.sec_state.encrypted);
+        }
+
         return rc;
 
     case BLE_GAP_EVENT_PASSKEY_ACTION:
         ESP_LOGI(TAG, "BLE_GAP_EVENT_PASSKEY_ACTION");
-        ble_gap_passkey_event(event->passkey.conn_handle, &event->passkey.params);
+        // ble_gap_passkey_event(event->passkey.conn_handle, &event->passkey.params);
+
+        // ESP_LOGI(TAG, "Passkey action: %d", event->passkey.params.action);
+        // if (event->passkey.params.action == BLE_SM_IOACT_DISP)
+        // {
+        //     // 여기서 패스키를 생성하고 표시
+        //     uint32_t passkey = 123456; // 또는 랜덤 생성
+        //     ESP_LOGI(TAG, "Passkey: %d", passkey);
+        //     return ble_sm_passkey_set(event->passkey.conn_handle, passkey);
+        // }
         break;
 
     /* Disconnect event */

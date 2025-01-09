@@ -48,7 +48,8 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
          (struct ble_gatt_chr_def[]){
              {.uuid = &sleep_light_chr_uuid.u,
               .access_cb = sleep_light_chr_access,
-              .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_WRITE,
+              .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ_ENC |
+                       BLE_GATT_CHR_F_WRITE_ENC,
               .val_handle = &sleep_light_chr_val_handle},
              {
                  0, /* No more characteristics in this service. */
