@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "ble_protocol.h"
+#include "common_info.h"
 
 typedef enum
 {

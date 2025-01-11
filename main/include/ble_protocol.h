@@ -6,7 +6,7 @@ enum
     RESET = 0x0101,
     WRITE_STATUS = 0x0102,
     READ_STATUS = 0x0103,
-    TEST_COLOR = 0x0104,
+    TEST_STATUS = 0x0104,
 
     WRITE_DEV_NAME = 0x0201,
     WRITE_PASSKEY = 0x0202,
@@ -27,14 +27,12 @@ typedef struct
     uint8_t len;
 } handler_rsp_t;
 
-typedef struct
-{
-    bool is_on;
-    uint8_t brightness;
-    uint8_t reserved_0;
-    uint8_t reserved_1;
-    uint32_t color; // argb
-} led_status_t;
+// typedef struct
+// {
+//     uint32_t is_on;
+//     uint32_t brightness;
+//     uint32_t color; // argb
+// } led_status_t;
 
 typedef struct
 {

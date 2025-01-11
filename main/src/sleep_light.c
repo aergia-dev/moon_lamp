@@ -162,7 +162,7 @@ void light_chage_color_dimming(const int step, const int duration, ARGB from_col
 
         // change_color(cur_color, LED_CNT);
         change_color(cur_color, LED_CNT);
-        esp_rom_delay_us(DELAY_TIME);
+        // esp_rom_delay_us(DELAY_TIME);
     }
 
     change_color(to_color, LED_CNT);
@@ -221,29 +221,41 @@ bool write_led_status(led_status_t *status)
 bool ble_cont_light_write(led_status_t *status)
 {
     ble_cont_light(status);
-    write_led_status(status);
+    // write_led_status(status);
+    set_led_status(*status);
     return true;
 }
 
 bool ble_cont_light(led_status_t *status)
 {
-    if (status->is_on)
+    ESP_LOGI(TAG, "ble_cont_light: isOn:%d, brightness: %d, color: %d", (int)status->is_on, (int)status->brightness, (int)status->color);
+    led_status_t cur_status = get_led_status();
+    if (cur_status.is_on != status->is_on)
     {
-        light_on_dimming();
+        if (status->is_on)
+        {
+            light_on_dimming();
+        }
+        else
+        {
+            light_off_dimming();
+        }
     }
-    else
+    if (cur_status.brightness != status->brightness)
     {
-        light_off_dimming();
-    }
-    if (status->brightness > 0)
-    {
-        cont_brightness(status->brightness);
+        if (status->brightness > 0)
+        {
+            cont_brightness(status->brightness);
+        }
     }
 
-    if (status->color > 0)
+    if (cur_status.color != status->color)
     {
-        ARGB color = {.code = status->color};
-        change_color(color, LED_CNT);
+        if (status->color > 0)
+        {
+            ARGB color = {.code = status->color};
+            change_color(color, LED_CNT);
+        }
     }
 
     return true;

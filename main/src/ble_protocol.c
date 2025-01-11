@@ -44,6 +44,7 @@ static void handler_write_status(handler_req_t *req, handler_rsp_t *rsp)
 static void handler_read_status(handler_req_t *req, handler_rsp_t *rsp)
 {
     led_status_t status;
+
     status.is_on = get_light_state();
     status.brightness = get_brightness();
     status.color = get_saved_color_uint32();
@@ -121,7 +122,7 @@ const cmd_map_t cmd_handlers[] = {
     {RESET, handler_reset},
     {WRITE_STATUS, handler_write_status},
     {READ_STATUS, handler_read_status},
-    {TEST_COLOR, handler_test_color},
+    {TEST_STATUS, handler_test_color},
     {WRITE_DEV_NAME, handler_write_dev_name},
     {WRITE_PASSKEY, handler_write_passkey},
     {0, NULL},
