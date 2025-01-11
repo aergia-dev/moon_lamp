@@ -119,8 +119,9 @@ static void start_advertising(void)
     adv_params.disc_mode = BLE_GAP_DISC_MODE_GEN;
 
     /* Set advertising interval */
-    adv_params.itvl_min = BLE_GAP_ADV_ITVL_MS(500);
-    adv_params.itvl_max = BLE_GAP_ADV_ITVL_MS(510);
+    adv_params.itvl_min = BLE_GAP_ADV_ITVL_MS(1600);
+    adv_params.itvl_max = BLE_GAP_ADV_ITVL_MS(2000);
+    // adv_params.channel_map = 7;
 
     /* Start advertising */
     rc = ble_gap_adv_start(own_addr_type, NULL, BLE_HS_FOREVER, &adv_params,
@@ -205,20 +206,25 @@ static int gap_event_handler(struct ble_gap_event *event, void *arg)
             // embedded_led_on();
 
             /* Try to update connection parameters */
-            // struct ble_gap_upd_params params = {.itvl_min = desc.conn_itvl,
-            //                                     .itvl_max = desc.conn_itvl,
-            //                                     .latency = 3,
-            //                                     .supervision_timeout =
-            //                                         desc.supervision_timeout};
-            // rc = ble_gap_update_params(event->connect.conn_handle, &params);
-            // if (rc != 0)
-            // {
-            //     ESP_LOGE(
-            //         TAG,
-            //         "failed to update connection parameters, error code: %d",
-            //         rc);
-            //     return rc;
-            // }
+            struct ble_gap_upd_params params = {
+                .itvl_min = 48, // desc.conn_itvl,
+                .itvl_max = 64, // 30ms * 64 desc.conn_itvl,
+                .latency = 3,
+                .supervision_timeout = 400,
+                // desc.supervision_timeout
+            };
+
+            vTaskDelay(pdMS_TO_TICKS(500));
+
+            rc = ble_gap_update_params(event->connect.conn_handle, &params);
+            if (rc != 0)
+            {
+                ESP_LOGE(
+                    TAG,
+                    "failed to update connection parameters, error code: %d",
+                    rc);
+                return rc;
+            }
 
             // ble_gap_security_initiate(event->connect.conn_handle);
         }
