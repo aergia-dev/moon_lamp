@@ -72,7 +72,7 @@ static void handler_test_color(handler_req_t *req, handler_rsp_t *rsp)
         memcpy(&status, req->data, sizeof(led_status_t));
         ESP_LOGI(TAG, "test led status");
         ESP_LOGI(TAG, "is_on: %d, brightness: %d, color: %lu", (int)status.is_on, (int)status.brightness, status.color);
-        ble_cont_light(&status);
+        ble_change_color(&status);
         rsp->is_success = true;
     }
     else

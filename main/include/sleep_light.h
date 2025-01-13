@@ -199,3 +199,4 @@ bool get_light_state(void);
 uint8_t get_brightness(void);
 uint32_t get_saved_color_uint32(void);
 void change_color_uint32(uint32_t c);
+void ble_change_color(led_status_t *status);

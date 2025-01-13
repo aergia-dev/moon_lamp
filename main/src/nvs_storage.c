@@ -127,10 +127,8 @@ bool nvs_write_str_nvs(char *key, char *val)
 
 uint32_t read_color_nvs()
 {
-    // FairyLight=0x00FFE42D,
-#define DEFAULT_COLOR 0x00FFE42D
-
-    uint32_t saved_color = nvs_read_uint32("saved_color", DEFAULT_COLOR);
+    uint32_t default_color = get_default_color();
+    uint32_t saved_color = nvs_read_uint32("saved_color", default_color);
     ESP_LOGI(NVS_TAG, "color from nvs %" PRIu32, saved_color);
     return saved_color;
 }

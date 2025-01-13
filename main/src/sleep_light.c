@@ -215,15 +215,27 @@ static void cont_brightness(uint8_t brightness)
 bool write_led_status(led_status_t *status)
 {
     // write to nvs
+    led_status_t cur_status = get_led_status();
+    if (cur_status.color != status->color)
+    {
+        write_color_nvs(status->color);
+    }
     return true;
 }
 
 bool ble_cont_light_write(led_status_t *status)
 {
     ble_cont_light(status);
-    // write_led_status(status);
+    write_led_status(status);
     set_led_status(*status);
     return true;
+}
+
+void ble_change_color(led_status_t *status)
+{
+    ARGB color = {.code = status->color};
+    change_color(color, LED_CNT);
+    ESP_LOGI(TAG, "ble_change_color: red(%x), green(%d), blue(%d)", (int)color.argb.red, (int)color.argb.green, (int)color.argb.blue);
 }
 
 bool ble_cont_light(led_status_t *status)
@@ -319,8 +331,15 @@ void light_init()
     ESP_LOGI(TAG, "Install led strip encoder");
     ESP_ERROR_CHECK(rmt_new_led_strip_encoder(&encoder_config, &led_encoder));
 
+    // ARGB color = {.code = read_color_nvs()};
+    // change_color(color, LED_CNT);
+
     ESP_LOGI(TAG, "Enable RMT TX channel");
     ESP_ERROR_CHECK(rmt_enable(led_chan));
+
+    // initial color
+    ARGB color = {.code = read_color_nvs()};
+    change_color(color, LED_CNT);
 }
 
 // void get_current_color(uint8_t* color)

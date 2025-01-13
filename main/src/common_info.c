@@ -9,6 +9,13 @@ const uint32_t GPIO_INPUT_IO_0 = 10;
 
 char device_name[DEV_NAME_LEN] = {};
 static uint32_t ble_passkey = 0;
+const uint32_t default_color = 0x00FEE033;
+
+uint32_t get_default_color()
+{
+    return default_color;
+}
+
 static led_status_t _led_status = {
     .is_on = 0,
     .brightness = 0,

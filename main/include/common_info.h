@@ -19,4 +19,6 @@ void set_led_status(led_status_t s);
 uint32_t get_ble_passkey();
 bool set_device_name(char *name);
 bool set_ble_passkey(uint32_t passkey);
+
+uint32_t get_default_color();
 #endif
