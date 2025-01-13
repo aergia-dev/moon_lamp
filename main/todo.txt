@@ -1,0 +1,6 @@
+todo.
+1. change color시에는 연속적인 색상 변경시 못 따라감 
+  - packet 크기를 줄이면 어떻게 될지 확인 필요
+2. web browser에서 fw download 필요
+3. passkey, device name, passkey 변경 구현 필요
+4. touch 가능 lcd를 붙여서 control 및 현재 시간 표시 - wifi를 연결하여 현재 시간 동기화 
