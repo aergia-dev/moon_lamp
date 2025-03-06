@@ -68,6 +68,7 @@ void update_led_strip()
 
 void change_color(ARGB color, int led_cnt)
 {
+
     // ESP_LOGI(TAG, "change_color: red(%d), green(%d), blue(%d)", (int)color.argb.red, (int)color.argb.green, (int)color.argb.blue);
     for (int j = 0; j < led_cnt * 3; j += 3)
     {
@@ -76,6 +77,38 @@ void change_color(ARGB color, int led_cnt)
         led_strip_pixels[j + 2] = color.argb.blue;
     }
     update_led_strip();
+}
+
+int clamp_int(int value, int min, int max)
+{
+    if (value < min)
+        return min;
+    if (value > max)
+        return max;
+    return value;
+}
+
+void change_color_with_status(led_status_t *status)
+{
+    ARGB originColor = {.code = status->color};
+    ESP_LOGD(TAG, "color from: %d, %d, %d", originColor.argb.red, originColor.argb.green, originColor.argb.blue);
+
+    double luminance = 0.299 * originColor.argb.red + 0.587 * originColor.argb.green + 0.114 * originColor.argb.blue;
+    double targetLuminance = status->brightness * 255 / 100;
+    double brightnessRatio = targetLuminance / luminance;
+
+    int newR = (originColor.argb.red * brightnessRatio);
+    int newG = (originColor.argb.green * brightnessRatio);
+    int newB = (originColor.argb.blue * brightnessRatio);
+
+    newR = clamp_int(newR, 0, 255);
+    newG = clamp_int(newG, 0, 255);
+    newB = clamp_int(newB, 0, 255);
+
+    ARGB color = {.argb = {.red = newR, .green = newG, .blue = newB}};
+
+    ESP_LOGD(TAG, "color to: %d, %d, %d", newR, newG, newB);
+    change_color(color, LED_CNT);
 }
 
 void change_color_seq(ARGB color, int led_cnt)
@@ -129,7 +162,6 @@ void limit_val(ARGB *dst, const ARGB_float *src, ARGB limit, bool is_inc)
 
 void light_chage_color_dimming(const int step, const int duration, ARGB from_color, ARGB to_color, bool is_turn_on)
 {
-    const int DELAY_TIME = duration / step;
     const int MARGIN = step * 20 / 100;
     ARGB_float argb_step = {.red = 0.0, .blue = 0.0, .green = 0, .alpha = 0};
 
@@ -253,20 +285,20 @@ bool ble_cont_light(led_status_t *status)
             light_off_dimming();
         }
     }
-    if (cur_status.brightness != status->brightness)
-    {
-        if (status->brightness > 0)
-        {
-            cont_brightness(status->brightness);
-        }
-    }
+    // if (cur_status.brightness != status->brightness)
+    // {
+    //     if (status->brightness > 0)
+    //     {
+    //         cont_brightness(status->brightness);
+    //     }
+    // }
 
-    if (cur_status.color != status->color)
+    if (cur_status.color != status->color || cur_status.brightness != status->brightness)
     {
         if (status->color > 0)
         {
             ARGB color = {.code = status->color};
-            change_color(color, LED_CNT);
+            change_color_with_status(status);
         }
     }
 
