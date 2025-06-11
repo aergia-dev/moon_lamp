@@ -19,5 +19,5 @@
 /* Public function declarations */
 void adv_init(void);
 int gap_init(void);
-
+int gap_update_device_name(void);
 #endif // GAP_SVC_H

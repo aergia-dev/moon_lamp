@@ -361,3 +361,16 @@ int gap_init(void)
     }
     return rc;
 }
+
+int gap_update_device_name(void)
+{
+    char *device_name = get_device_name();
+    int rc = ble_svc_gap_device_name_set(device_name);
+    if (rc != 0)
+    {
+        ESP_LOGE(TAG, "failed to update device name to %s, error code: %d", device_name, rc);
+        return rc;
+    }
+    ESP_LOGI(TAG, "device name updated to: %s", device_name);
+    return 0;
+}
