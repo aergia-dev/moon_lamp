@@ -192,9 +192,7 @@ void light_chage_color_dimming(const int step, const int duration, ARGB from_col
 
         limit_val(&cur_color, &argb_accum, to_color, is_turn_on);
 
-        // change_color(cur_color, LED_CNT);
         change_color(cur_color, LED_CNT);
-        // esp_rom_delay_us(DELAY_TIME);
     }
 
     change_color(to_color, LED_CNT);
@@ -238,12 +236,6 @@ void light_off_dimming()
     light_chage_color_dimming(step, duration_us, from_color, to_color, false);
 }
 
-static void cont_brightness(uint8_t brightness)
-{
-    ESP_LOGI(TAG, "cont_brightness(%d)", (int)brightness);
-    //..
-}
-
 bool write_led_status(led_status_t *status)
 {
     // write to nvs
@@ -285,19 +277,10 @@ bool ble_cont_light(led_status_t *status)
             light_off_dimming();
         }
     }
-    // if (cur_status.brightness != status->brightness)
-    // {
-    //     if (status->brightness > 0)
-    //     {
-    //         cont_brightness(status->brightness);
-    //     }
-    // }
-
     if (cur_status.color != status->color || cur_status.brightness != status->brightness)
     {
         if (status->color > 0)
         {
-            ARGB color = {.code = status->color};
             change_color_with_status(status);
         }
     }
@@ -316,39 +299,6 @@ void toggle_light()
         light_on_dimming();
     }
 }
-
-// void darker_light()
-// {
-//     int cnt = using_led_cnt - CONT_STEP;
-
-//     if(cnt < 0)
-//         cnt = 0;
-
-//     using_led_cnt = cnt;
-
-//     ARGB color;
-//     color.code = White;
-
-//     printf("less light : %d\n", using_led_cnt);
-//     light_chage_color(color, cnt);
-// }
-
-// void brighter_light()
-// {
-//     int cnt = using_led_cnt + CONT_STEP;
-
-//     if(cnt > LED_CNT - 1 )
-//         cnt = LED_CNT -1;
-
-//     using_led_cnt = cnt;
-
-//     printf("more light : %d\n", using_led_cnt);
-//     ARGB color;
-//     color.code = White;
-
-//     light_chage_color(color, cnt);
-// }
-
 void light_init()
 {
     rmt_tx_channel_config_t tx_chan_config = {
@@ -373,26 +323,6 @@ void light_init()
     ARGB color = {.code = read_color_nvs()};
     change_color(color, LED_CNT);
 }
-
-// void get_current_color(uint8_t* color)
-// {
-//     color[0] = current_color.argb.alpha;
-//     color[1] = current_color.argb.red;
-//     color[2] = current_color.argb.green;
-//     color[3] = current_color.argb.blue;
-// }
-
-// bool get_light_on_off()
-// {
-//     return light_state;
-// }
-
-// ARGB fromRGB(uint8_t r, uint8_t g, uint8_t b)
-// {
-//     ARGB color = {.argb.alpha=0, .argb.red=r, .argb.blue=b, .argb.green=g, };
-
-//     return color;
-// }
 
 void led_strip_hsv2rgb(uint32_t h, uint32_t s, uint32_t v, uint32_t *r, uint32_t *g, uint32_t *b)
 {

@@ -134,38 +134,6 @@ static void start_advertising(void)
     ESP_LOGI(TAG, "advertising started!");
 }
 
-static void ble_gap_passkey_event(uint16_t conn_handle, struct ble_gap_passkey_params *params)
-{
-    uint32_t passkey = get_ble_passkey();
-    struct ble_sm_io pkey = {0};
-    ESP_LOGI(TAG, "ble_gap_passkey_event, passkey: %lu", passkey);
-    int r = 0;
-    switch (params->action)
-    {
-    case BLE_SM_IOACT_DISP:
-        pkey.action = params->action;
-        pkey.passkey = passkey;
-        r = ble_sm_inject_io(conn_handle, &pkey);
-        ESP_LOGI(TAG, "BLE_SM_IOACT_DISP: %d", r);
-        break;
-    case BLE_SM_IOACT_INPUT:
-        pkey.action = params->action;
-        pkey.passkey = passkey;
-        r = ble_sm_inject_io(conn_handle, &pkey);
-        ESP_LOGI(TAG, "BLE_SM_IOACT_INPUT: %d", r);
-        break;
-
-    case BLE_SM_IOACT_NUMCMP:
-        pkey.action = params->action;
-        pkey.numcmp_accept = 1;
-        r = ble_sm_inject_io(conn_handle, &pkey);
-        ESP_LOGI(TAG, "BLE_SM_IOACT_NUMCMP: %d", r);
-        break;
-    default:
-        ESP_LOGI(TAG, "unkown passkey action: %d", params->action);
-        break;
-    }
-}
 /*
  * NimBLE applies an event-driven model to keep GAP service going
  * gap_event_handler is a callback function registered when calling
