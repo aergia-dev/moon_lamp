@@ -9,5 +9,13 @@
         "sleep_light.h": "c",
         "gap.h": "c",
         "common_info.h": "c"
-    }
+    },
+
+    "idf.adapterTargetName": "esp32c3",
+    "idf.customExtraPaths": "",
+    "idf.customExtraVars": "",
+    "idf.espIdfPath": "/Users/b4/esp/esp-idf",
+    "idf.toolsPath": "/Users/b4/.espressif",
+    "cmake.configureOnOpen": false,
+    "C_Cpp.intelliSenseEngine": "Tag Parser"    
 }
