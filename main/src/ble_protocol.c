@@ -86,7 +86,7 @@ static void handler_test_color(handler_req_t *req, handler_rsp_t *rsp)
 static void handler_write_dev_name(handler_req_t *req, handler_rsp_t *rsp)
 {
     ESP_LOGI(TAG, "handler_write_dev_name");
-    if (req->len == sizeof(led_status_t))
+    if (req->len == sizeof(write_dev_name_t))
     {
         write_dev_name_t name;
         memcpy(&name, req->data, sizeof(write_dev_name_t));

@@ -1,7 +1,7 @@
 #include "string.h"
 #include "nvs_storage.h"
 #include "common_info.h"
-
+#include "gap.h"
 const uint32_t GPIO_INPUT_IO_0 = 10;
 #define DEV_NAME_LEN 15
 // const uint32_t LED_CONT = 10;
@@ -66,6 +66,8 @@ size_t get_device_name_length()
 bool set_device_name(char *name)
 {
     write_device_name_nvs(name);
+    strcpy(device_name, name);
+    gap_update_device_name();
     return true;
 }
 
