@@ -4,6 +4,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
+#include "freertos/timers.h"
 #include "driver/gpio.h"
 #include "sleep_light.h"
 #include "common_info.h"
@@ -11,36 +12,133 @@
 #define ESP_INTR_FLAG_DEFAULT 0
 
 static QueueHandle_t gpio_evt_queue = NULL;
+static TimerHandle_t brightness_mode_timer = NULL;
+static TimerHandle_t long_press_timer = NULL;
 
-static uint32_t last_trigger_time = 0;
-#define DEBOUNCE_TIME_MS 500 // 디바운스 시간
+static uint32_t press_start_time = 0;
+static bool is_pressed = false;
+static bool brightness_mode = false;
+static uint8_t current_brightness_level = 1;
+static bool long_press_triggered = false;
+
+#define LONG_PRESS_TIME_MS 1500
+#define BRIGHTNESS_MODE_TIMEOUT_MS 5000
+
+static void brightness_mode_blink(void)
+{
+    bool current_state = get_light_state();
+
+    light_off();
+    vTaskDelay(pdMS_TO_TICKS(100));
+    light_on();
+    vTaskDelay(pdMS_TO_TICKS(100));
+    light_off();
+    vTaskDelay(pdMS_TO_TICKS(100));
+    light_on();
+}
+
+static void handle_brightness_adjustment(void)
+{
+    current_brightness_level = (current_brightness_level % 5) + 1;
+    uint8_t brightness_percent = current_brightness_level * 20;
+
+    led_status_t status = get_led_status();
+    status.brightness = brightness_percent;
+    status.is_on = 1;
+    set_led_status(status);
+
+    change_color_with_status(&status);
+
+    xTimerReset(brightness_mode_timer, 0);
+    printf("Brightness: %d%%\n", brightness_percent);
+}
+
+static void long_press_timer_callback(TimerHandle_t xTimer)
+{
+    if (is_pressed && get_light_state() && !brightness_mode)
+    {
+        brightness_mode = true;
+        long_press_triggered = true;
+        current_brightness_level = get_brightness() / 20;
+        if (current_brightness_level == 0)
+            current_brightness_level = 1;
+
+        brightness_mode_blink();
+
+        xTimerStart(brightness_mode_timer, 0);
+        printf("Brightness mode ON (during press)\n");
+    }
+}
+
+static void brightness_mode_timeout_callback(TimerHandle_t xTimer)
+{
+    brightness_mode = false;
+
+    brightness_mode_blink();
+
+    printf("Brightness mode OFF (timeout)\n");
+}
 
 static void IRAM_ATTR gpio_isr_handler(void *arg)
 {
-    uint32_t gpio_num = (uint32_t)arg;
     uint32_t current_time = xTaskGetTickCountFromISR() * portTICK_PERIOD_MS;
-
-    if ((current_time - last_trigger_time) > DEBOUNCE_TIME_MS)
-    {
-        // 이벤트 처리
-        xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
-        last_trigger_time = current_time;
-    }
+    xQueueSendFromISR(gpio_evt_queue, &current_time, NULL);
 }
 
 static void gpio_task(void *arg)
 {
-    uint32_t io_num = 0;
+    uint32_t event_time = 0;
     uint32_t gpio_num = get_touch_gpio();
 
     for (;;)
     {
-        if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY))
+        if (xQueueReceive(gpio_evt_queue, &event_time, portMAX_DELAY))
         {
-            if (io_num == gpio_num)
+            int current_level = gpio_get_level(gpio_num);
+
+            if (current_level == 1 && !is_pressed)
             {
-                toggle_light();
-                // printf("in gpio handler\n");
+                is_pressed = true;
+                long_press_triggered = false;
+                press_start_time = event_time;
+
+                if (get_light_state() && !brightness_mode)
+                {
+                    xTimerStart(long_press_timer, 0);
+                }
+
+                printf("Touch started\n");
+            }
+            else if (current_level == 0 && is_pressed)
+            {
+                is_pressed = false;
+                uint32_t press_duration = event_time - press_start_time;
+
+                xTimerStop(long_press_timer, 0);
+
+                printf("Touch ended, duration: %lu ms\n", press_duration);
+
+                if (long_press_triggered)
+                {
+                    printf("Long press already processed\n");
+                    long_press_triggered = false;
+                }
+                else if (press_duration >= 100)
+                {
+                    if (brightness_mode)
+                    {
+                        handle_brightness_adjustment();
+                    }
+                    else
+                    {
+                        toggle_light();
+                        printf("Toggle light\n");
+                    }
+                }
+                else
+                {
+                    printf("Touch too short, ignored\n");
+                }
             }
         }
     }
@@ -51,18 +149,35 @@ void gpio_init()
     gpio_config_t io_conf = {};
     uint32_t gpio_num = get_touch_gpio();
 
-    io_conf.intr_type = GPIO_INTR_POSEDGE;
-    // bit mask of the pins, use GPIO4/5 here
+    io_conf.intr_type = GPIO_INTR_ANYEDGE;
     io_conf.pin_bit_mask = (1ULL << gpio_num);
-    // set as input mode
     io_conf.mode = GPIO_MODE_INPUT;
-    // enable pull-up mode
     io_conf.pull_up_en = 1;
     gpio_config(&io_conf);
 
     gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
+
+    long_press_timer = xTimerCreate(
+        "LongPressTimer",
+        pdMS_TO_TICKS(LONG_PRESS_TIME_MS),
+        pdFALSE,
+        NULL,
+        long_press_timer_callback);
+
+    brightness_mode_timer = xTimerCreate(
+        "BrightnessModeTimer",
+        pdMS_TO_TICKS(BRIGHTNESS_MODE_TIMEOUT_MS),
+        pdFALSE,
+        NULL,
+        brightness_mode_timeout_callback);
+
     xTaskCreate(gpio_task, "gpio_task", 4096, NULL, 10, NULL);
     gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
-
     gpio_isr_handler_add(gpio_num, gpio_isr_handler, (void *)gpio_num);
+
+    current_brightness_level = get_brightness() / 20;
+    if (current_brightness_level == 0)
+        current_brightness_level = 1;
+
+    printf("GPIO initialized with hold-press detection\n");
 }
