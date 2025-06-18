@@ -9,6 +9,7 @@
 #include "embedded_led.h"
 #include "common.h"
 #include "common_info.h"
+#include "schedule_timer.h"
 
 void app_main(void)
 {
@@ -27,6 +28,7 @@ void app_main(void)
     // }
 
     init_nimble();
+    schedule_timer_init();
 }
 
 // #include <stdio.h>

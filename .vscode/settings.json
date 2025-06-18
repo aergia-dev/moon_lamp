@@ -15,7 +15,8 @@
         "vector": "c",
         "types.h": "c",
         "_useconds_t.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "gptimer.h": "c"
     },
 
     "idf.adapterTargetName": "esp32c3",
