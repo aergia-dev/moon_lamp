@@ -8,7 +8,14 @@
         "string.h": "c",
         "sleep_light.h": "c",
         "gap.h": "c",
-        "common_info.h": "c"
+        "common_info.h": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "vector": "c",
+        "types.h": "c",
+        "_useconds_t.h": "c",
+        "time.h": "c"
     },
 
     "idf.adapterTargetName": "esp32c3",

@@ -173,3 +173,29 @@ bool write_device_name_nvs(char *name)
 {
     return nvs_write_str_nvs("device_name", name);
 }
+
+void read_onTime_nvs(uint32_t *on_time)
+{
+    uint32_t default_on_time = 10; // default on time in seconds
+    *on_time = nvs_read_uint32("on_time", default_on_time);
+    ESP_LOGI(NVS_TAG, "on time from nvs %" PRIu32, *on_time);
+}
+
+bool write_onTime_nvs(uint32_t on_time)
+{
+    ESP_LOGI(NVS_TAG, "write on time to nvs %" PRIu32, on_time);
+    return nvs_write_uint32("on_time", on_time);
+}
+
+void read_offTime_nvs(uint64_t *off_time)
+{
+    uint32_t default_off_time = 10; // default off time in seconds
+    *off_time = nvs_read_uint32("off_time", default_off_time);
+    ESP_LOGI(NVS_TAG, "off time from nvs %" PRIu64, *off_time);
+}
+
+bool write_offTime_nvs(uint64_t off_time)
+{
+    ESP_LOGI(NVS_TAG, "write off time to nvs %" PRIu64, off_time);
+    return nvs_write_uint32("off_time", off_time);
+}

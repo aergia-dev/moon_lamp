@@ -7,6 +7,7 @@
 #include <string.h>
 #include "sleep_light.h"
 #include "common_info.h"
+#include <sys/time.h>
 
 static const char *TAG = "BLE_PROTOCOL";
 
@@ -62,6 +63,32 @@ static void handler_read_status(handler_req_t *req, handler_rsp_t *rsp)
         rsp->len = 0;
         ESP_LOGE(TAG, "error: should increase rsp data size to %d", sizeof(led_status_t));
     }
+}
+
+static void handler_sync_time(handler_req_t *req, handler_rsp_t *rsp)
+{
+    if (req->len == sizeof(struct timeval))
+    {
+        struct timeval tv;
+        memcpy(&tv, req->data, sizeof(struct timeval));
+        settimeofday(&tv, NULL);
+
+        struct tm timeinfo;
+        localtime_r(&tv.tv_sec, &timeinfo);
+
+        ESP_LOGI(TAG, "시간 동기화 완료: %04d-%02d-%02d %02d:%02d:%02d",
+                 timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+                 timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+
+        set_off_time((uint64_t)tv.tv_sec * 1000 + (uint64_t)tv.tv_usec / 1000); // milliseconds
+        rsp->is_success = true;
+    }
+    else
+    {
+        rsp->is_success = false;
+    }
+
+    rsp->len = 0;
 }
 
 static void handler_test_color(handler_req_t *req, handler_rsp_t *rsp)
@@ -125,6 +152,7 @@ const cmd_map_t cmd_handlers[] = {
     {TEST_STATUS, handler_test_color},
     {WRITE_DEV_NAME, handler_write_dev_name},
     {WRITE_PASSKEY, handler_write_passkey},
+    {SYNC_TIME, handler_sync_time}, // data type: timeval
     {0, NULL},
 };
 

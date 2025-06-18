@@ -1,6 +1,7 @@
 #include "string.h"
 #include "nvs_storage.h"
 #include "common_info.h"
+#include "nvs_wrapper.h"
 
 const uint32_t GPIO_INPUT_IO_0 = 10;
 #define DEV_NAME_LEN 15
@@ -80,12 +81,7 @@ bool set_ble_passkey(uint32_t passkey)
     return true;
 }
 
-// uint32_t get_led_count()
-// {
-//     return LED_CONT;
-// }
-
-// uint32_t get_led_cont_gpio()
-// {
-//     return LED_CONT_GPIO;
-// }
+bool set_off_time(uint64_t on_time)
+{
+    return write_offTime_nvs(on_time);
+}

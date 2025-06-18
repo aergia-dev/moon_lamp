@@ -21,4 +21,6 @@ bool set_device_name(char *name);
 bool set_ble_passkey(uint32_t passkey);
 
 uint32_t get_default_color();
+
+bool set_off_time(uint64_t on_time);
 #endif
