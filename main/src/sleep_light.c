@@ -68,8 +68,6 @@ void update_led_strip()
 
 void change_color(ARGB color, int led_cnt)
 {
-
-    // ESP_LOGI(TAG, "change_color: red(%d), green(%d), blue(%d)", (int)color.argb.red, (int)color.argb.green, (int)color.argb.blue);
     for (int j = 0; j < led_cnt * 3; j += 3)
     {
         led_strip_pixels[j + 0] = color.argb.green;
@@ -191,10 +189,7 @@ void light_chage_color_dimming(const int step, const int duration, ARGB from_col
         argb_accum.alpha += argb_step.alpha;
 
         limit_val(&cur_color, &argb_accum, to_color, is_turn_on);
-
-        // change_color(cur_color, LED_CNT);
         change_color(cur_color, LED_CNT);
-        // esp_rom_delay_us(DELAY_TIME);
     }
 
     change_color(to_color, LED_CNT);
@@ -285,13 +280,6 @@ bool ble_cont_light(led_status_t *status)
             light_off_dimming();
         }
     }
-    // if (cur_status.brightness != status->brightness)
-    // {
-    //     if (status->brightness > 0)
-    //     {
-    //         cont_brightness(status->brightness);
-    //     }
-    // }
 
     if (cur_status.color != status->color || cur_status.brightness != status->brightness)
     {
@@ -317,38 +305,6 @@ void toggle_light()
     }
 }
 
-// void darker_light()
-// {
-//     int cnt = using_led_cnt - CONT_STEP;
-
-//     if(cnt < 0)
-//         cnt = 0;
-
-//     using_led_cnt = cnt;
-
-//     ARGB color;
-//     color.code = White;
-
-//     printf("less light : %d\n", using_led_cnt);
-//     light_chage_color(color, cnt);
-// }
-
-// void brighter_light()
-// {
-//     int cnt = using_led_cnt + CONT_STEP;
-
-//     if(cnt > LED_CNT - 1 )
-//         cnt = LED_CNT -1;
-
-//     using_led_cnt = cnt;
-
-//     printf("more light : %d\n", using_led_cnt);
-//     ARGB color;
-//     color.code = White;
-
-//     light_chage_color(color, cnt);
-// }
-
 void light_init()
 {
     rmt_tx_channel_config_t tx_chan_config = {
@@ -363,9 +319,6 @@ void light_init()
     ESP_LOGI(TAG, "Install led strip encoder");
     ESP_ERROR_CHECK(rmt_new_led_strip_encoder(&encoder_config, &led_encoder));
 
-    // ARGB color = {.code = read_color_nvs()};
-    // change_color(color, LED_CNT);
-
     ESP_LOGI(TAG, "Enable RMT TX channel");
     ESP_ERROR_CHECK(rmt_enable(led_chan));
 
@@ -373,26 +326,6 @@ void light_init()
     ARGB color = {.code = read_color_nvs()};
     change_color(color, LED_CNT);
 }
-
-// void get_current_color(uint8_t* color)
-// {
-//     color[0] = current_color.argb.alpha;
-//     color[1] = current_color.argb.red;
-//     color[2] = current_color.argb.green;
-//     color[3] = current_color.argb.blue;
-// }
-
-// bool get_light_on_off()
-// {
-//     return light_state;
-// }
-
-// ARGB fromRGB(uint8_t r, uint8_t g, uint8_t b)
-// {
-//     ARGB color = {.argb.alpha=0, .argb.red=r, .argb.blue=b, .argb.green=g, };
-
-//     return color;
-// }
 
 void led_strip_hsv2rgb(uint32_t h, uint32_t s, uint32_t v, uint32_t *r, uint32_t *g, uint32_t *b)
 {
