@@ -5,8 +5,8 @@
 
 const uint32_t GPIO_INPUT_IO_0 = 10;
 #define DEV_NAME_LEN 15
-// const uint32_t LED_CONT = 10;
-// const uint32_t LED_CONT_GPIO = 21;
+
+static const char *TAG = "common_info";
 
 char device_name[DEV_NAME_LEN] = {};
 static uint32_t ble_passkey = 0;
@@ -21,6 +21,18 @@ static led_status_t _led_status = {
     .is_on = 0,
     .brightness = 0,
     .color = 0,
+};
+
+// 일 기준
+static on_off_time_t _on_off_time = {
+    .on = {
+        .hour = 0,
+        .minute = 0,
+    },
+    .off = {
+        .hour = 0,
+        .minute = 0,
+    },
 };
 
 led_status_t get_led_status(void)
@@ -81,7 +93,14 @@ bool set_ble_passkey(uint32_t passkey)
     return true;
 }
 
-bool set_off_time(uint64_t on_time)
+void set_on_time(event_time_t on_time)
 {
-    return write_offTime_nvs(on_time);
+    _on_off_time.on.hour = on_time.hour;
+    _on_off_time.on.minute = on_time.minute;
+}
+
+void set_off_time(event_time_t off_time)
+{
+    _on_off_time.off.hour = off_time.hour;
+    _on_off_time.off.minute = off_time.minute;
 }

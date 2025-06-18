@@ -10,7 +10,9 @@ enum
 
     WRITE_DEV_NAME = 0x0201,
     WRITE_PASSKEY = 0x0202,
-    SYNC_TIME = 0x0203, // data type: timeval
+    SYNC_TIME = 0x0203,
+    POWER_ON_TIME = 0x0204,
+    POWER_OFF_TIME = 0x0205,
 };
 
 typedef struct
