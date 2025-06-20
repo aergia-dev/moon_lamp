@@ -10,9 +10,11 @@
 #include "freertos/task.h"
 #include "nvs_storage.h"
 #include "esp_sleep.h"
+#include "driver/gpio.h"
 
 static const char *TAG = "sleep-light";
-#define LED_CNT 10
+#define LED_CNT 1
+#define MAX_SUPPORTED_LED_CNT 20 // 최대 지원 LED 개수
 #define CONT_STEP 20
 #define LED_GPIO_NUM 21
 int using_led_cnt = 0;
@@ -20,7 +22,7 @@ ARGB current_color;
 
 #define RMT_LED_STRIP_RESOLUTION_HZ 10000000 // 10MHz resolution, 1 tick = 0.1us (led strip needs a high resolution)
 static bool _light_state = false;
-static uint8_t led_strip_pixels[LED_CNT * 3];
+static uint8_t led_strip_pixels[MAX_SUPPORTED_LED_CNT * 3];
 static rmt_encoder_handle_t led_encoder = NULL;
 static led_strip_encoder_config_t encoder_config = {
     .resolution = RMT_LED_STRIP_RESOLUTION_HZ,
@@ -212,6 +214,32 @@ void light_off()
     change_color(color, LED_CNT);
 }
 
+void light_on_blink(uint32_t blink_times, uint32_t blink_term_ms)
+{
+    ESP_LOGI(TAG, "light_blink_on(), blink times: %" PRIu32 ", blink_term_ms: %" PRIu32, blink_times, blink_term_ms);
+
+    for (uint32_t i = 0; i < blink_times; i++)
+    {
+        light_off();
+        vTaskDelay(pdMS_TO_TICKS(blink_term_ms));
+        light_on();
+        vTaskDelay(pdMS_TO_TICKS(blink_term_ms));
+    }
+}
+
+void light_off_blink(uint32_t blink_times, uint32_t blink_term_ms)
+{
+    ESP_LOGI(TAG, "light_blink_off(), blink times: %" PRIu32 ", blink_term_ms: %" PRIu32, blink_times, blink_term_ms);
+    for (uint32_t i = 0; i < blink_times; i++)
+    {
+        light_on();
+        vTaskDelay(pdMS_TO_TICKS(blink_term_ms));
+
+        light_off();
+        vTaskDelay(pdMS_TO_TICKS(blink_term_ms));
+    }
+}
+
 void light_on_dimming()
 {
     set_light_state(true);
@@ -312,10 +340,6 @@ void light_init()
 
     ESP_LOGI(TAG, "Install led strip encoder");
     ESP_ERROR_CHECK(rmt_new_led_strip_encoder(&encoder_config, &led_encoder));
-
-    // ARGB color = {.code = read_color_nvs()};
-    // change_color(color, LED_CNT);
-
     ESP_LOGI(TAG, "Enable RMT TX channel");
     ESP_ERROR_CHECK(rmt_enable(led_chan));
 

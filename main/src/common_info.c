@@ -1,7 +1,7 @@
 #include "string.h"
 #include "nvs_storage.h"
 #include "common_info.h"
-#include "nvs_wrapper.h"
+#include "time.h"
 
 const uint32_t GPIO_INPUT_IO_0 = 10;
 #define DEV_NAME_LEN 15
@@ -24,12 +24,15 @@ static led_status_t _led_status = {
 };
 
 // 일 기준
-static on_off_time_t _on_off_time = {
+static on_off_time_t _power_on_off_time = {
+    .is_time_synced = false,
     .on = {
+        .is_set = false,
         .hour = 0,
         .minute = 0,
     },
     .off = {
+        .is_set = false,
         .hour = 0,
         .minute = 0,
     },
@@ -92,15 +95,33 @@ bool set_ble_passkey(uint32_t passkey)
     write_ble_pwd_nvs(passkey);
     return true;
 }
+void set_time_synced(bool is_synced)
+{
+    _power_on_off_time.is_time_synced = is_synced;
+}
+
+void get_on_off_time(on_off_time_t *on_off_time)
+{
+    memcpy(on_off_time, &_power_on_off_time, sizeof(on_off_time_t));
+}
 
 void set_on_time(event_time_t on_time)
 {
-    _on_off_time.on.hour = on_time.hour;
-    _on_off_time.on.minute = on_time.minute;
+    _power_on_off_time.on.is_set = true;
+    _power_on_off_time.on.hour = on_time.hour;
+    _power_on_off_time.on.minute = on_time.minute;
 }
 
 void set_off_time(event_time_t off_time)
 {
-    _on_off_time.off.hour = off_time.hour;
-    _on_off_time.off.minute = off_time.minute;
+    _power_on_off_time.off.is_set = true;
+    _power_on_off_time.off.hour = off_time.hour;
+    _power_on_off_time.off.minute = off_time.minute;
+}
+
+void get_local_time(struct tm *t)
+{
+    time_t now;
+    time(&now);
+    localtime_r(&now, t);
 }

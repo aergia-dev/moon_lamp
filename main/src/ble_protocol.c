@@ -79,7 +79,7 @@ static void handler_sync_time(handler_req_t *req, handler_rsp_t *rsp)
         ESP_LOGI(TAG, "시간 동기화 완료: %04d-%02d-%02d %02d:%02d:%02d",
                  timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
                  timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-
+        set_time_synced(true);
         rsp->is_success = true;
     }
     else

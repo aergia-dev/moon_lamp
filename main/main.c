@@ -19,14 +19,6 @@ void app_main(void)
     light_init();
     light_on();
 
-    // int ret = nvs_flash_init();
-    // if (ret == ESP_ERR_NVS_NO_FREE_PAGES ||
-    //     ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
-    // {
-    //     ESP_ERROR_CHECK(nvs_flash_erase());
-    //     ret = nvs_flash_init();
-    // }
-
     init_nimble();
     schedule_timer_init();
 }
