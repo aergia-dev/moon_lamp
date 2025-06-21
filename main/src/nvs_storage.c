@@ -5,7 +5,8 @@
 #include "esp_log.h"
 #include "string.h"
 #include "common_info.h"
-#define NVS_TAG "NVS"
+
+#define TAG "NVS"
 
 void nvs_init()
 {
@@ -20,8 +21,7 @@ void nvs_init()
     }
     ESP_ERROR_CHECK(ret);
 
-    printf("\n");
-    printf("Opening Non-Volatile Storage (NVS) handle... ");
+    ESP_LOGI(TAG, "Opening Non-Volatile Storage (NVS) handle... ");
 }
 
 void open_nvs_handle(nvs_handle_t *handle)
@@ -30,7 +30,7 @@ void open_nvs_handle(nvs_handle_t *handle)
     err = nvs_open("storage", NVS_READWRITE, handle);
     if (err != ESP_OK)
     {
-        ESP_LOGE(NVS_TAG, "Error (%s) opening NVS handle!\n", esp_err_to_name(err));
+        ESP_LOGE(TAG, "Error (%s) opening NVS handle!\n", esp_err_to_name(err));
     }
 }
 
@@ -45,12 +45,12 @@ uint32_t nvs_read_uint32(char *key, uint32_t default_val)
     switch (err)
     {
     case ESP_OK:
-        printf("Done\n");
-        printf("read saved val = %" PRIu32 "\n", saved_val);
+        ESP_LOGI(TAG, "Done");
+        ESP_LOGI(TAG, "read saved val = %" PRIu32, saved_val);
         break;
     default:
         saved_val = default_val;
-        ESP_LOGI(NVS_TAG, "not init or can't read. set as default %" PRIu32, saved_val);
+        ESP_LOGI(TAG, "not init or can't read. set as default %" PRIu32, saved_val);
     }
 
     nvs_close(handle);
@@ -70,10 +70,13 @@ bool nvs_write_uint32(char *key, uint32_t val)
     if (err != ESP_OK)
         ret = false;
 
-    printf("Committing updates in NVS ... ");
+    ESP_LOGI(TAG, "Committing updates in NVS ... ");
     err = nvs_commit(handle);
-    printf((err != ESP_OK) ? "Failed!\n" : "Done\n");
 
+    if (err == ESP_OK)
+        ESP_LOGI(TAG, "Done");
+    else
+        ESP_LOGI(TAG, "Failed");
     // Close
     nvs_close(handle);
 
@@ -90,12 +93,12 @@ bool nvs_read_str(char *key, char *default_val, char *read_val, size_t *length)
     switch (err)
     {
     case ESP_OK:
-        printf("Done\n");
-        printf("read saved val = %s\n", read_val);
+        ESP_LOGI(TAG, "Done");
+        ESP_LOGI(TAG, "read saved val = %s", read_val);
         break;
     default:
         memcpy(read_val, default_val, *length);
-        ESP_LOGI(NVS_TAG, "not init or can't read. set as default %s", read_val);
+        ESP_LOGI(TAG, "not init or can't read. set as default %s", read_val);
     }
 
     nvs_close(handle);
@@ -115,9 +118,9 @@ bool nvs_write_str_nvs(char *key, char *val)
     if (err != ESP_OK)
         ret = false;
 
-    printf("Committing updates in NVS ... ");
+    ESP_LOGI(TAG, "Committing updates in NVS ... ");
     err = nvs_commit(handle);
-    printf((err != ESP_OK) ? "Failed!\n" : "Done\n");
+    ESP_LOGI(TAG, "%s", (err != ESP_OK) ? "Failed!" : "Done");
 
     // Close
     nvs_close(handle);
@@ -129,13 +132,12 @@ uint32_t read_color_nvs()
 {
     uint32_t default_color = get_default_color();
     uint32_t saved_color = nvs_read_uint32("saved_color", default_color);
-    ESP_LOGI(NVS_TAG, "color from nvs %" PRIu32, saved_color);
     return saved_color;
 }
 
 void write_color_nvs(uint32_t color)
 {
-    ESP_LOGI(NVS_TAG, "write color to nvs %" PRIu32, color);
+    ESP_LOGI(TAG, "write color to nvs %" PRIu32, color);
     nvs_write_uint32("saved_color", color);
 }
 
@@ -149,7 +151,7 @@ uint32_t read_ble_pwd_nvs()
 
 void write_ble_pwd_nvs(uint32_t color)
 {
-    ESP_LOGI(NVS_TAG, "write ble_pwd to nvs %" PRIu32, color);
+    ESP_LOGI(TAG, "write ble_pwd to nvs %" PRIu32, color);
     nvs_write_uint32("ble_pwd", color);
 }
 
@@ -160,12 +162,12 @@ void read_device_name_nvs(char *name)
 
     if (nvs_read_str("device_name", default_name, name, &length))
     {
-        ESP_LOGI(NVS_TAG, "device name from nvs %s", name);
+        ESP_LOGI(TAG, "device name from nvs %s", name);
     }
     else
     {
 
-        ESP_LOGI(NVS_TAG, "can't read device name from nvs so use %s", default_name);
+        ESP_LOGI(TAG, "can't read device name from nvs so use %s", default_name);
     }
 }
 
@@ -178,12 +180,12 @@ void read_onTime_nvs(uint32_t *on_time)
 {
     uint32_t default_on_time = 10; // default on time in seconds
     *on_time = nvs_read_uint32("on_time", default_on_time);
-    ESP_LOGI(NVS_TAG, "on time from nvs %" PRIu32, *on_time);
+    ESP_LOGI(TAG, "on time from nvs %" PRIu32, *on_time);
 }
 
 bool write_onTime_nvs(uint32_t on_time)
 {
-    ESP_LOGI(NVS_TAG, "write on time to nvs %" PRIu32, on_time);
+    ESP_LOGI(TAG, "write on time to nvs %" PRIu32, on_time);
     return nvs_write_uint32("on_time", on_time);
 }
 
@@ -191,11 +193,11 @@ void read_offTime_nvs(uint64_t *off_time)
 {
     uint32_t default_off_time = 10; // default off time in seconds
     *off_time = nvs_read_uint32("off_time", default_off_time);
-    ESP_LOGI(NVS_TAG, "off time from nvs %" PRIu64, *off_time);
+    ESP_LOGI(TAG, "off time from nvs %" PRIu64, *off_time);
 }
 
 bool write_offTime_nvs(uint64_t off_time)
 {
-    ESP_LOGI(NVS_TAG, "write off time to nvs %" PRIu64, off_time);
+    ESP_LOGI(TAG, "write off time to nvs %" PRIu64, off_time);
     return nvs_write_uint32("off_time", off_time);
 }

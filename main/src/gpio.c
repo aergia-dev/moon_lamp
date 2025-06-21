@@ -8,7 +8,9 @@
 #include "driver/gpio.h"
 #include "sleep_light.h"
 #include "common_info.h"
+#include "esp_log.h"
 
+#define TAG "GPIO"
 #define ESP_INTR_FLAG_DEFAULT 0
 
 static QueueHandle_t gpio_evt_queue = NULL;
@@ -50,7 +52,7 @@ static void handle_brightness_adjustment(void)
     change_color_with_status(&status);
 
     xTimerReset(brightness_mode_timer, 0);
-    printf("Brightness: %d%%\n", brightness_percent);
+    ESP_LOGI(TAG, "Brightness: %d", brightness_percent);
 }
 
 static void long_press_timer_callback(TimerHandle_t xTimer)
@@ -66,7 +68,7 @@ static void long_press_timer_callback(TimerHandle_t xTimer)
         brightness_mode_blink();
 
         xTimerStart(brightness_mode_timer, 0);
-        printf("Brightness mode ON (during press)\n");
+        ESP_LOGI(TAG, "Brightness mode ON (during press)");
     }
 }
 
@@ -76,7 +78,7 @@ static void brightness_mode_timeout_callback(TimerHandle_t xTimer)
 
     brightness_mode_blink();
 
-    printf("Brightness mode OFF (timeout)\n");
+    ESP_LOGI(TAG, "Brightness mode OFF (timeout)");
 }
 
 static void IRAM_ATTR gpio_isr_handler(void *arg)
@@ -107,7 +109,7 @@ static void gpio_task(void *arg)
                     xTimerStart(long_press_timer, 0);
                 }
 
-                printf("Touch started\n");
+                ESP_LOGI(TAG, "Touch started");
             }
             else if (current_level == 0 && is_pressed)
             {
@@ -116,11 +118,11 @@ static void gpio_task(void *arg)
 
                 xTimerStop(long_press_timer, 0);
 
-                printf("Touch ended, duration: %lu ms\n", press_duration);
+                ESP_LOGI(TAG, "Touch ended, duration: %" PRIu32 " ms", press_duration);
 
                 if (long_press_triggered)
                 {
-                    printf("Long press already processed\n");
+                    ESP_LOGI(TAG, "Long press already processed");
                     long_press_triggered = false;
                 }
                 else if (press_duration >= 100)
@@ -132,12 +134,12 @@ static void gpio_task(void *arg)
                     else
                     {
                         toggle_light();
-                        printf("Toggle light\n");
+                        ESP_LOGI(TAG, "Toggle light");
                     }
                 }
                 else
                 {
-                    printf("Touch too short, ignored\n");
+                    ESP_LOGI(TAG, "Touch too short, ignored");
                 }
             }
         }
@@ -179,5 +181,5 @@ void gpio_init()
     if (current_brightness_level == 0)
         current_brightness_level = 1;
 
-    printf("GPIO initialized with hold-press detection\n");
+    ESP_LOGI(TAG, "GPIO initialized with hold-press detection");
 }

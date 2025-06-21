@@ -70,8 +70,6 @@ void update_led_strip()
 
 void change_color(ARGB color, int led_cnt)
 {
-
-    // ESP_LOGI(TAG, "change_color: red(%d), green(%d), blue(%d)", (int)color.argb.red, (int)color.argb.green, (int)color.argb.blue);
     for (int j = 0; j < led_cnt * 3; j += 3)
     {
         led_strip_pixels[j + 0] = color.argb.green;
