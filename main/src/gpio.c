@@ -28,8 +28,6 @@ static bool long_press_triggered = false;
 
 static void brightness_mode_blink(void)
 {
-    bool current_state = get_light_state();
-
     light_off();
     vTaskDelay(pdMS_TO_TICKS(100));
     light_on();

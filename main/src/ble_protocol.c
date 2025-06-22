@@ -67,6 +67,8 @@ static void handler_read_status(handler_req_t *req, handler_rsp_t *rsp)
 
 static void handler_sync_time(handler_req_t *req, handler_rsp_t *rsp)
 {
+
+    rsp->is_success = false;
     if (req->len == sizeof(struct timeval))
     {
         struct timeval tv;
@@ -82,20 +84,8 @@ static void handler_sync_time(handler_req_t *req, handler_rsp_t *rsp)
         set_time_synced(true);
         rsp->is_success = true;
     }
-    else
-    {
-        rsp->is_success = false;
-    }
 
     rsp->len = 0;
-}
-
-static struct timeval uint64_to_timeval_seconds(uint64_t second_since_epoch)
-{
-    struct timeval tv;
-    tv.tv_sec = second_since_epoch; // Integer division for seconds
-    tv.tv_usec = 0;
-    return tv;
 }
 
 static void convert_second_to_event_time(uint64_t seconds, event_time_t *event_time)
@@ -116,6 +106,8 @@ static void convert_second_to_event_time(uint64_t seconds, event_time_t *event_t
 
 static void handler_on_time(handler_req_t *req, handler_rsp_t *rsp)
 {
+
+    rsp->is_success = false;
     if (req->len == sizeof(uint64_t))
     {
         uint64_t seconds = *(uint64_t *)req->data;
@@ -124,15 +116,13 @@ static void handler_on_time(handler_req_t *req, handler_rsp_t *rsp)
         set_on_time(on_time);
         rsp->is_success = true;
     }
-    else
-    {
-        rsp->is_success = false;
-    }
 
     rsp->len = 0;
 }
 static void handler_off_time(handler_req_t *req, handler_rsp_t *rsp)
 {
+    rsp->is_success = false;
+
     if (req->len == sizeof(struct timeval))
     {
         uint64_t seconds = *(uint64_t *)req->data;
@@ -140,10 +130,6 @@ static void handler_off_time(handler_req_t *req, handler_rsp_t *rsp)
         convert_second_to_event_time(seconds, &off_time);
         set_off_time(off_time); // milliseconds
         rsp->is_success = true;
-    }
-    else
-    {
-        rsp->is_success = false;
     }
 
     rsp->len = 0;
@@ -203,7 +189,7 @@ static void handler_write_passkey(handler_req_t *req, handler_rsp_t *rsp)
     }
 }
 
-const cmd_map_t cmd_handlers[] = {
+static const cmd_map_t cmd_handlers[] = {
     {RESET, handler_reset},
     {WRITE_STATUS, handler_write_status},
     {READ_STATUS, handler_read_status},
