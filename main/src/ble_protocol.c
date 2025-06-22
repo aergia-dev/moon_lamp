@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -45,7 +44,21 @@ static void handler_read_status(handler_req_t *req, handler_rsp_t *rsp)
 {
     led_status_t status;
 
-    status.is_on = get_light_state();
+    bool actual_light_state = get_light_state();
+    led_status_t stored_status = get_led_status();
+
+    if ((stored_status.is_on != 0) != actual_light_state)
+    {
+        ESP_LOGW(TAG, "State mismatch detected! Stored: %d, Actual: %d",
+                 stored_status.is_on, actual_light_state);
+
+        stored_status.is_on = actual_light_state ? 1 : 0;
+        set_led_status(stored_status);
+
+        ESP_LOGI(TAG, "States synchronized");
+    }
+
+    status.is_on = actual_light_state ? 1 : 0;
     status.brightness = get_brightness();
     status.color = get_saved_color_uint32();
 
@@ -54,8 +67,9 @@ static void handler_read_status(handler_req_t *req, handler_rsp_t *rsp)
     {
         memcpy(rsp->data, &status, sizeof(led_status_t));
         rsp->len = sizeof(led_status_t);
-        ESP_LOGI(TAG, "read led status");
-        ESP_LOGI(TAG, "is_on: %d, brightness: %d, color: %lu", (int)status.is_on, (int)status.brightness, status.color);
+        ESP_LOGI(TAG, "read led status (synced)");
+        ESP_LOGI(TAG, "is_on: %d, brightness: %d, color: %lu",
+                 (int)status.is_on, (int)status.brightness, status.color);
     }
     else
     {

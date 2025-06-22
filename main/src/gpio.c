@@ -47,10 +47,12 @@ static void handle_brightness_adjustment(void)
     status.is_on = 1;
     set_led_status(status);
 
+    set_light_state(true);
+
     change_color_with_status(&status);
 
     xTimerReset(brightness_mode_timer, 0);
-    printf("Brightness: %d%%\n", brightness_percent);
+    printf("Brightness: %d%% (states synced)\n", brightness_percent);
 }
 
 static void long_press_timer_callback(TimerHandle_t xTimer)
@@ -132,7 +134,7 @@ static void gpio_task(void *arg)
                     else
                     {
                         toggle_light();
-                        printf("Toggle light\n");
+                        printf("Toggle light (synced)\n");
                     }
                 }
                 else
@@ -179,5 +181,5 @@ void gpio_init()
     if (current_brightness_level == 0)
         current_brightness_level = 1;
 
-    printf("GPIO initialized with hold-press detection\n");
+    printf("GPIO initialized with unified state management\n");
 }
