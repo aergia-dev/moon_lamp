@@ -83,64 +83,67 @@ static void IRAM_ATTR gpio_isr_handler(void *arg)
 {
     uint32_t current_time = xTaskGetTickCountFromISR() * portTICK_PERIOD_MS;
     xQueueSendFromISR(gpio_evt_queue, &current_time, NULL);
+    xQueueSendFromISR(gpio_evt_queue, &current_time, NULL);
 }
 
 static void gpio_task(void *arg)
 {
+    uint32_t event_time = 0;
     uint32_t event_time = 0;
     uint32_t gpio_num = get_touch_gpio();
 
     for (;;)
     {
         if (xQueueReceive(gpio_evt_queue, &event_time, portMAX_DELAY))
-        {
-            int current_level = gpio_get_level(gpio_num);
-
-            if (current_level == 1 && !is_pressed)
+            if (xQueueReceive(gpio_evt_queue, &event_time, portMAX_DELAY))
             {
-                is_pressed = true;
-                long_press_triggered = false;
-                press_start_time = event_time;
+                int current_level = gpio_get_level(gpio_num);
 
-                if (get_light_state() && !brightness_mode)
+                if (current_level == 1 && !is_pressed)
                 {
-                    xTimerStart(long_press_timer, 0);
-                }
-
-                ESP_LOGI(TAG, "Touch started");
-            }
-            else if (current_level == 0 && is_pressed)
-            {
-                is_pressed = false;
-                uint32_t press_duration = event_time - press_start_time;
-
-                xTimerStop(long_press_timer, 0);
-
-                ESP_LOGI(TAG, "Touch ended, duration: %" PRIu32 " ms", press_duration);
-
-                if (long_press_triggered)
-                {
-                    ESP_LOGI(TAG, "Long press already processed");
+                    is_pressed = true;
                     long_press_triggered = false;
-                }
-                else if (press_duration >= 100)
-                {
-                    if (brightness_mode)
+                    press_start_time = event_time;
+
+                    if (get_light_state() && !brightness_mode)
                     {
-                        handle_brightness_adjustment();
+                        xTimerStart(long_press_timer, 0);
+                    }
+
+                    ESP_LOGI(TAG, "Touch started");
+                }
+                else if (current_level == 0 && is_pressed)
+                {
+                    is_pressed = false;
+                    uint32_t press_duration = event_time - press_start_time;
+
+                    xTimerStop(long_press_timer, 0);
+
+                    ESP_LOGI(TAG, "Touch ended, duration: %" PRIu32 " ms", press_duration);
+
+                    if (long_press_triggered)
+                    {
+                        ESP_LOGI(TAG, "Long press already processed");
+                        long_press_triggered = false;
+                    }
+                    else if (press_duration >= 100)
+                    {
+                        if (brightness_mode)
+                        {
+                            handle_brightness_adjustment();
+                        }
+                        else
+                        {
+                            toggle_light();
+                            ESP_LOGI(TAG, "Toggle light");
+                        }
                     }
                     else
                     {
-                        toggle_light();
-                        ESP_LOGI(TAG, "Toggle light");
+                        ESP_LOGI(TAG, "Touch too short, ignored");
                     }
                 }
-                else
-                {
-                    ESP_LOGI(TAG, "Touch too short, ignored");
-                }
             }
-        }
     }
 }
 
@@ -150,12 +153,27 @@ void gpio_init()
     uint32_t gpio_num = get_touch_gpio();
 
     io_conf.intr_type = GPIO_INTR_ANYEDGE;
+    io_conf.intr_type = GPIO_INTR_ANYEDGE;
     io_conf.pin_bit_mask = (1ULL << gpio_num);
     io_conf.mode = GPIO_MODE_INPUT;
     io_conf.pull_up_en = 1;
     gpio_config(&io_conf);
 
     gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
+
+    long_press_timer = xTimerCreate(
+        "LongPressTimer",
+        pdMS_TO_TICKS(LONG_PRESS_TIME_MS),
+        pdFALSE,
+        NULL,
+        long_press_timer_callback);
+
+    brightness_mode_timer = xTimerCreate(
+        "BrightnessModeTimer",
+        pdMS_TO_TICKS(BRIGHTNESS_MODE_TIMEOUT_MS),
+        pdFALSE,
+        NULL,
+        brightness_mode_timeout_callback);
 
     long_press_timer = xTimerCreate(
         "LongPressTimer",
