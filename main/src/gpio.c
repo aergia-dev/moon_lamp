@@ -6,9 +6,9 @@
 #include "freertos/queue.h"
 #include "freertos/timers.h"
 #include "driver/gpio.h"
-#include "sleep_light.h"
 #include "common_info.h"
 #include "esp_log.h"
+#include "touch_events.h"
 
 #define TAG "GPIO"
 #define ESP_INTR_FLAG_DEFAULT 0
@@ -23,18 +23,21 @@ static bool brightness_mode = false;
 static uint8_t current_brightness_level = 1;
 static bool long_press_triggered = false;
 
+static touch_event_callback_t event_callback = NULL;
+
 #define LONG_PRESS_TIME_MS 1500
 #define BRIGHTNESS_MODE_TIMEOUT_MS 5000
 
-static void brightness_mode_blink(void)
+static void emit_touch_event(touch_event_type_t type, uint32_t duration, uint8_t brightness)
 {
-    light_off();
-    vTaskDelay(pdMS_TO_TICKS(100));
-    light_on();
-    vTaskDelay(pdMS_TO_TICKS(100));
-    light_off();
-    vTaskDelay(pdMS_TO_TICKS(100));
-    light_on();
+    if (event_callback)
+    {
+        touch_event_t event = {
+            .type = type,
+            .duration_ms = duration,
+            .brightness_level = brightness};
+        event_callback(&event);
+    }
 }
 
 static void handle_brightness_adjustment(void)
@@ -42,12 +45,7 @@ static void handle_brightness_adjustment(void)
     current_brightness_level = (current_brightness_level % 5) + 1;
     uint8_t brightness_percent = current_brightness_level * 20;
 
-    led_status_t status = get_led_status();
-    status.brightness = brightness_percent;
-    status.is_on = 1;
-    set_led_status(status);
-
-    change_color_with_status(&status);
+    emit_touch_event(TOUCH_EVENT_BRIGHTNESS_STEP, 0, brightness_percent);
 
     xTimerReset(brightness_mode_timer, 0);
     ESP_LOGI(TAG, "Brightness: %d", brightness_percent);
@@ -55,15 +53,12 @@ static void handle_brightness_adjustment(void)
 
 static void long_press_timer_callback(TimerHandle_t xTimer)
 {
-    if (is_pressed && get_light_state() && !brightness_mode)
+    if (is_pressed && !brightness_mode)
     {
         brightness_mode = true;
         long_press_triggered = true;
-        current_brightness_level = get_brightness() / 20;
-        if (current_brightness_level == 0)
-            current_brightness_level = 1;
 
-        brightness_mode_blink();
+        emit_touch_event(TOUCH_EVENT_LONG_PRESS, LONG_PRESS_TIME_MS, 0);
 
         xTimerStart(brightness_mode_timer, 0);
         ESP_LOGI(TAG, "Brightness mode ON (during press)");
@@ -74,7 +69,7 @@ static void brightness_mode_timeout_callback(TimerHandle_t xTimer)
 {
     brightness_mode = false;
 
-    brightness_mode_blink();
+    emit_touch_event(TOUCH_EVENT_BRIGHTNESS_EXIT, 0, 0);
 
     ESP_LOGI(TAG, "Brightness mode OFF (timeout)");
 }
@@ -105,7 +100,7 @@ static void gpio_task(void *arg)
                     long_press_triggered = false;
                     press_start_time = event_time;
 
-                    if (get_light_state() && !brightness_mode)
+                    if (!brightness_mode)
                     {
                         xTimerStart(long_press_timer, 0);
                     }
@@ -123,7 +118,6 @@ static void gpio_task(void *arg)
 
                     if (long_press_triggered)
                     {
-                        ESP_LOGI(TAG, "Long press already processed");
                         long_press_triggered = false;
                     }
                     else if (press_duration >= 100)
@@ -134,17 +128,18 @@ static void gpio_task(void *arg)
                         }
                         else
                         {
-                            toggle_light();
-                            ESP_LOGI(TAG, "Toggle light");
+                            emit_touch_event(TOUCH_EVENT_SHORT_PRESS, press_duration, 0);
+                            printf("Short touch event\n");
                         }
-                    }
-                    else
-                    {
-                        ESP_LOGI(TAG, "Touch too short, ignored");
                     }
                 }
             }
     }
+}
+
+void touch_register_callback(touch_event_callback_t callback)
+{
+    event_callback = callback;
 }
 
 void gpio_init()
@@ -193,9 +188,5 @@ void gpio_init()
     gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
     gpio_isr_handler_add(gpio_num, gpio_isr_handler, (void *)gpio_num);
 
-    current_brightness_level = get_brightness() / 20;
-    if (current_brightness_level == 0)
-        current_brightness_level = 1;
-
-    ESP_LOGI(TAG, "GPIO initialized with hold-press detection");
+    ESP_LOGI(TAG, "GPIO initialized (event-driven)");
 }
