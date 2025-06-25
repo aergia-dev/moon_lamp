@@ -21,21 +21,12 @@ static led_status_t _led_status = {
     .is_on = 0,
     .brightness = 0,
     .color = 0,
-};
-
-// 일 기준
-static on_off_time_t _power_on_off_time = {
     .is_time_synced = false,
-    .on = {
-        .is_set = false,
-        .hour = 0,
-        .minute = 0,
-    },
-    .off = {
-        .is_set = false,
-        .hour = 0,
-        .minute = 0,
-    },
+    .power_on_hour = 0,
+    .power_on_minute = 0,
+    .power_off_hour = 0,
+    .power_off_minute = 0,
+    .power_off_delay_min = 0,
 };
 
 led_status_t get_led_status(void)
@@ -48,6 +39,11 @@ void set_led_status(led_status_t s)
     _led_status.is_on = s.is_on;
     _led_status.brightness = s.brightness;
     _led_status.color = s.color;
+    _led_status.power_on_hour = s.power_on_hour;
+    _led_status.power_on_minute = s.power_on_minute;
+    _led_status.power_off_hour = s.power_off_hour;
+    _led_status.power_off_minute = s.power_off_minute;
+    _led_status.power_off_delay_min = s.power_off_delay_min;
 }
 
 void init_common_info()
@@ -97,26 +93,7 @@ bool set_ble_passkey(uint32_t passkey)
 }
 void set_time_synced(bool is_synced)
 {
-    _power_on_off_time.is_time_synced = is_synced;
-}
-
-void get_on_off_time(on_off_time_t *on_off_time)
-{
-    memcpy(on_off_time, &_power_on_off_time, sizeof(on_off_time_t));
-}
-
-void set_on_time(event_time_t on_time)
-{
-    _power_on_off_time.on.is_set = true;
-    _power_on_off_time.on.hour = on_time.hour;
-    _power_on_off_time.on.minute = on_time.minute;
-}
-
-void set_off_time(event_time_t off_time)
-{
-    _power_on_off_time.off.is_set = true;
-    _power_on_off_time.off.hour = off_time.hour;
-    _power_on_off_time.off.minute = off_time.minute;
+    _led_status.is_time_synced = is_synced;
 }
 
 void get_local_time(struct tm *t)

@@ -10,18 +10,11 @@ static const char *TAG = "TIMER";
 static gptimer_handle_t gptimer = NULL;
 static TaskHandle_t timer_task_handle = NULL;
 
-// gptimer_config_t timer_config = {
-//     .clk_src = GPTIMER_CLK_SRC_DEFAULT,
-//     .direction = GPTIMER_COUNT_UP,
-//     .resolution_hz = 1000000, // 1MHz, 1 tick = 1마이크로초
-// };
-
 static void exec_event(void)
 {
-    on_off_time_t on_off_time;
-    get_on_off_time(&on_off_time);
+    led_status_t led_status = get_led_status();
 
-    if (!on_off_time.is_time_synced)
+    if (!led_status.is_time_synced)
     {
         ESP_LOGW(TAG, "Time is not synced, skipping timer event execution.");
         return;
@@ -32,18 +25,18 @@ static void exec_event(void)
     ESP_LOGI(TAG, "Current time: %02d:%02d", cur_time.tm_hour, cur_time.tm_min);
 
     // do power on
-    if (on_off_time.on.is_set && cur_time.tm_hour == on_off_time.on.hour && cur_time.tm_min == on_off_time.on.minute)
+    if (cur_time.tm_hour == led_status.power_on_hour && cur_time.tm_min == led_status.power_on_minute)
     {
-        ESP_LOGI(TAG, "Turning light ON at scheduled time: %" PRIu32 ":%" PRIu32, on_off_time.on.hour, on_off_time.on.minute);
+        ESP_LOGI(TAG, "Turning light ON at scheduled time: %d : %d", led_status.power_on_hour, led_status.power_on_minute);
         const uint32_t blink_times = 3;
         const uint32_t blink_term_ms = 100;
         light_on_blink(blink_times, blink_term_ms);
     }
 
     // power off
-    if (on_off_time.off.is_set && cur_time.tm_hour == on_off_time.off.hour && cur_time.tm_min == on_off_time.off.minute)
+    if (cur_time.tm_hour == led_status.power_off_hour && cur_time.tm_min == led_status.power_off_minute)
     {
-        ESP_LOGI(TAG, "Turning light OFF at scheduled time: %" PRIu32 ":%" PRIu32, on_off_time.off.hour, on_off_time.off.minute);
+        ESP_LOGI(TAG, "Turning light OFF at scheduled time: %d : %d", led_status.power_off_hour, led_status.power_off_minute);
         const uint32_t blink_times = 3;
         const uint32_t blink_term_ms = 100;
         light_off_blink(blink_times, blink_term_ms);

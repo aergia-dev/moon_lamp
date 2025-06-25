@@ -6,21 +6,13 @@ typedef struct
     uint32_t is_on;
     uint32_t brightness;
     uint32_t color; // argb order
-} led_status_t;
-
-typedef struct
-{
-    bool is_set;
-    uint32_t hour;
-    uint32_t minute;
-} event_time_t;
-
-typedef struct
-{
     bool is_time_synced;
-    event_time_t on;
-    event_time_t off;
-} on_off_time_t;
+    uint8_t power_on_hour;
+    uint8_t power_on_minute;
+    uint8_t power_off_hour;
+    uint8_t power_off_minute;
+    uint16_t power_off_delay_min;
+} led_status_t;
 
 void init_common_info();
 char *get_device_name();
@@ -35,11 +27,7 @@ bool set_device_name(char *name);
 bool set_ble_passkey(uint32_t passkey);
 
 uint32_t get_default_color();
+void get_local_time(struct tm *time);
 
 void set_time_synced(bool is_synced);
-void set_on_time(event_time_t on_time);
-void set_off_time(event_time_t off_time);
-void get_on_off_time(on_off_time_t *on_off_time);
-
-void get_local_time(struct tm *time);
 #endif

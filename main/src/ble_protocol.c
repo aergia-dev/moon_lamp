@@ -50,6 +50,12 @@ static void handler_read_status(handler_req_t *req, handler_rsp_t *rsp)
     status.brightness = get_brightness();
     status.color = get_saved_color_uint32();
 
+    status.power_on_hour = 0;       // not used
+    status.power_on_minute = 0;     // not used
+    status.power_off_hour = 0;      // not used
+    status.power_off_minute = 0;    // not used
+    status.power_off_delay_min = 0; // not used
+
     rsp->is_success = true;
     if (HANDLER_RSP_SZ >= sizeof(led_status_t))
     {
@@ -82,53 +88,6 @@ static void handler_sync_time(handler_req_t *req, handler_rsp_t *rsp)
                  timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
                  timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
         set_time_synced(true);
-        rsp->is_success = true;
-    }
-
-    rsp->len = 0;
-}
-
-static void convert_second_to_event_time(uint64_t seconds, event_time_t *event_time)
-{
-    time_t rawtime = seconds;
-    struct tm *info;
-    info = localtime(&rawtime); // 또는 gmtime(&rawtime)
-
-    if (info == NULL)
-    {
-        perror("Failed to convert time_t to struct tm");
-        return;
-    }
-
-    event_time->hour = info->tm_hour;
-    event_time->minute = info->tm_min;
-}
-
-static void handler_on_time(handler_req_t *req, handler_rsp_t *rsp)
-{
-
-    rsp->is_success = false;
-    if (req->len == sizeof(uint64_t))
-    {
-        uint64_t seconds = *(uint64_t *)req->data;
-        event_time_t on_time;
-        convert_second_to_event_time(seconds, &on_time);
-        set_on_time(on_time);
-        rsp->is_success = true;
-    }
-
-    rsp->len = 0;
-}
-static void handler_off_time(handler_req_t *req, handler_rsp_t *rsp)
-{
-    rsp->is_success = false;
-
-    if (req->len == sizeof(struct timeval))
-    {
-        uint64_t seconds = *(uint64_t *)req->data;
-        event_time_t off_time;
-        convert_second_to_event_time(seconds, &off_time);
-        set_off_time(off_time); // milliseconds
         rsp->is_success = true;
     }
 
@@ -196,9 +155,7 @@ static const cmd_map_t cmd_handlers[] = {
     {TEST_STATUS, handler_test_color},
     {WRITE_DEV_NAME, handler_write_dev_name},
     {WRITE_PASSKEY, handler_write_passkey},
-    {SYNC_TIME, handler_sync_time},     // data type: timeval
-    {POWER_ON_TIME, handler_on_time},   // data type: timeval
-    {POWER_OFF_TIME, handler_off_time}, // data type: timeval
+    {SYNC_TIME, handler_sync_time}, // data type: timeval
     {0, NULL},
 };
 
