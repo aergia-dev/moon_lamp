@@ -84,7 +84,6 @@ static void IRAM_ATTR gpio_isr_handler(void *arg)
 static void gpio_task(void *arg)
 {
     uint32_t event_time = 0;
-    uint32_t event_time = 0;
     uint32_t gpio_num = get_touch_gpio();
 
     for (;;)

@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -63,11 +64,11 @@ static void handler_read_status(handler_req_t *req, handler_rsp_t *rsp)
     status.brightness = get_brightness();
     status.color = get_saved_color_uint32();
 
-    status.power_on_hour = 0;       // not used
-    status.power_on_minute = 0;     // not used
-    status.power_off_hour = 0;      // not used
-    status.power_off_minute = 0;    // not used
-    status.power_off_delay_min = 0; // not used
+    status.power_on_hour = 0;
+    status.power_on_minute = 0;
+    status.power_off_hour = 0;
+    status.power_off_minute = 0;
+    status.power_off_delay_min = 0;
 
     rsp->is_success = true;
     if (HANDLER_RSP_SZ >= sizeof(led_status_t))
@@ -87,15 +88,23 @@ static void handler_read_status(handler_req_t *req, handler_rsp_t *rsp)
 
 static void handler_sync_time(handler_req_t *req, handler_rsp_t *rsp)
 {
+    ESP_LOGI(TAG, "handler_sync_time, req->len: %d", req->len);
 
     rsp->is_success = false;
-    if (req->len == sizeof(struct timeval))
+    if (req->len == sizeof(uint64_t))
     {
+        uint64_t ts;
+        memcpy(&ts, req->data, sizeof(uint64_t));
         struct timeval tv;
-        memcpy(&tv, req->data, sizeof(struct timeval));
+        tv.tv_sec = (time_t)ts; // Convert milliseconds to
         settimeofday(&tv, NULL);
 
         struct tm timeinfo;
+
+        // 일본하고 시간대가 같음. "Asia/Seoul"이 안먹힘
+        setenv("TZ", "JST-9", 1);
+        tzset();
+
         localtime_r(&tv.tv_sec, &timeinfo);
 
         ESP_LOGI(TAG, "시간 동기화 완료: %04d-%02d-%02d %02d:%02d:%02d",
