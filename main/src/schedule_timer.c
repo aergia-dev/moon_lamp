@@ -9,6 +9,8 @@ static const char *TAG = "TIMER";
 
 static gptimer_handle_t gptimer = NULL;
 static TaskHandle_t timer_task_handle = NULL;
+// should be bigger then 1000 * 60;
+static const event_term = 1000 * 60; // 1 minute
 
 static void exec_event(void)
 {
@@ -23,6 +25,9 @@ static void exec_event(void)
     struct tm cur_time;
     get_local_time(&cur_time);
     ESP_LOGI(TAG, "Current time: %02d:%02d", cur_time.tm_hour, cur_time.tm_min);
+    ESP_LOGI(TAG, "events - power on: %02d:%02d", led_status.power_on_hour, led_status.power_on_minute);
+    ESP_LOGI(TAG, "events - power off: %02d:%02d", led_status.power_off_hour, led_status.power_off_minute);
+    ESP_LOGI(TAG, "events - delay power off: %02d", led_status.delay_power_off_min);
 
     // do power on
     if (cur_time.tm_hour == led_status.power_on_hour && cur_time.tm_min == led_status.power_on_minute)
@@ -41,6 +46,20 @@ static void exec_event(void)
         const uint32_t blink_term_ms = 100;
         light_off_blink(blink_times, blink_term_ms);
     }
+
+    if (led_status.delay_power_off_min > 0)
+    {
+        int reduce_min = event_term / 60 / 1000;
+        led_status.delay_power_off_min -= reduce_min;
+
+        if (led_status.delay_power_off_min == 0)
+        {
+            ESP_LOGI(TAG, "Turning light OFF at delay scheduled time");
+            const uint32_t blink_times = 3;
+            const uint32_t blink_term_ms = 100;
+            light_off_blink(blink_times, blink_term_ms);
+        }
+    }
 }
 
 static void timer_event_task(void *arg)
@@ -51,7 +70,7 @@ static void timer_event_task(void *arg)
         {
             ESP_LOGI(TAG, "Timer event occurred!");
             exec_event();
-            vTaskDelay(pdMS_TO_TICKS(1000)); // 1초 대기
+            vTaskDelay(pdMS_TO_TICKS(event_term)); // 1초 대기
         }
     }
 }

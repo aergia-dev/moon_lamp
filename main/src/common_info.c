@@ -26,7 +26,7 @@ static led_status_t _led_status = {
     .power_on_minute = 0,
     .power_off_hour = 0,
     .power_off_minute = 0,
-    .power_off_delay_min = 0,
+    .delay_power_off_min = 0,
 };
 
 led_status_t get_led_status(void)
@@ -43,7 +43,7 @@ void set_led_status(led_status_t s)
     _led_status.power_on_minute = s.power_on_minute;
     _led_status.power_off_hour = s.power_off_hour;
     _led_status.power_off_minute = s.power_off_minute;
-    _led_status.power_off_delay_min = s.power_off_delay_min;
+    _led_status.delay_power_off_min = s.delay_power_off_min;
 }
 
 void init_common_info()

@@ -11,8 +11,8 @@ typedef struct
     uint8_t power_on_minute;
     uint8_t power_off_hour;
     uint8_t power_off_minute;
-    uint16_t power_off_delay_min;
-} led_status_t;
+    uint16_t delay_power_off_min;
+} __attribute__((packed)) led_status_t;
 
 void init_common_info();
 char *get_device_name();

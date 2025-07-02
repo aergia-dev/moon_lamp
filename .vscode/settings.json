@@ -26,6 +26,6 @@
     "idf.toolsPath": "/Users/b4/.espressif",
     "cmake.configureOnOpen": false,
     "C_Cpp.intelliSenseEngine": "Tag Parser",
-    "idf.port": "/dev/tty.usbmodem2101",
+    "idf.port": "/dev/tty.usbmodem101",
     "idf.flashType": "UART"
 }

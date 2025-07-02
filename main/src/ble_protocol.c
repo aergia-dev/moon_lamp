@@ -26,6 +26,9 @@ static void handler_reset(handler_req_t *req, handler_rsp_t *rsp)
 
 static void handler_write_status(handler_req_t *req, handler_rsp_t *rsp)
 {
+
+    ESP_LOGI(TAG, "handler_write_status, req->len: %d", req->len);
+
     if (req->len != sizeof(led_status_t))
     {
         ESP_LOGE(TAG, "handler_write_status - data size is not matched, got %d but should be %d", req->len, sizeof(led_status_t));
@@ -51,7 +54,7 @@ static void handler_read_status(handler_req_t *req, handler_rsp_t *rsp)
 
     if ((stored_status.is_on != 0) != actual_light_state)
     {
-        ESP_LOGW(TAG, "State mismatch detected! Stored: %d, Actual: %d",
+        ESP_LOGW(TAG, "State mismatch detected! Stored: %" PRIu32 ",  Actual: %d",
                  stored_status.is_on, actual_light_state);
 
         stored_status.is_on = actual_light_state ? 1 : 0;
@@ -68,7 +71,7 @@ static void handler_read_status(handler_req_t *req, handler_rsp_t *rsp)
     status.power_on_minute = 0;
     status.power_off_hour = 0;
     status.power_off_minute = 0;
-    status.power_off_delay_min = 0;
+    status.delay_power_off_min = 0;
 
     rsp->is_success = true;
     if (HANDLER_RSP_SZ >= sizeof(led_status_t))
