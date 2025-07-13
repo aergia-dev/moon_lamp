@@ -1,4 +1,3 @@
-
 #include "led_strip_encoder.h"
 #include "sleep_light.h"
 #include "esp_log.h"
@@ -10,9 +9,11 @@
 #include "freertos/task.h"
 #include "nvs_storage.h"
 #include "esp_sleep.h"
+#include "driver/gpio.h"
 
 static const char *TAG = "sleep-light";
-#define LED_CNT 10
+#define LED_CNT 1
+#define MAX_SUPPORTED_LED_CNT 20 // 최대 지원 LED 개수
 #define CONT_STEP 20
 #define LED_GPIO_NUM 21
 int using_led_cnt = 0;
@@ -20,7 +21,7 @@ ARGB current_color;
 
 #define RMT_LED_STRIP_RESOLUTION_HZ 10000000 // 10MHz resolution, 1 tick = 0.1us (led strip needs a high resolution)
 static bool _light_state = false;
-static uint8_t led_strip_pixels[LED_CNT * 3];
+static uint8_t led_strip_pixels[MAX_SUPPORTED_LED_CNT * 3];
 static rmt_encoder_handle_t led_encoder = NULL;
 static led_strip_encoder_config_t encoder_config = {
     .resolution = RMT_LED_STRIP_RESOLUTION_HZ,
@@ -68,8 +69,6 @@ void update_led_strip()
 
 void change_color(ARGB color, int led_cnt)
 {
-
-    // ESP_LOGI(TAG, "change_color: red(%d), green(%d), blue(%d)", (int)color.argb.red, (int)color.argb.green, (int)color.argb.blue);
     for (int j = 0; j < led_cnt * 3; j += 3)
     {
         led_strip_pixels[j + 0] = color.argb.green;
@@ -113,14 +112,12 @@ void change_color_with_status(led_status_t *status)
 
 void change_color_seq(ARGB color, int led_cnt)
 {
-    // 한 번에 처리할 LED 개수 제한
     const int BATCH_SIZE = 10;
 
     for (int i = 0; i < led_cnt; i += BATCH_SIZE)
     {
         int current_batch = (i + BATCH_SIZE < led_cnt) ? BATCH_SIZE : (led_cnt - i);
 
-        // 현재 배치의 LED들 색상 설정
         for (int j = i * 3; j < (i + current_batch) * 3; j += 3)
         {
             led_strip_pixels[j + 0] = color.argb.green;
@@ -129,7 +126,6 @@ void change_color_seq(ARGB color, int led_cnt)
         }
 
         update_led_strip();
-        // 배치 사이에 짧은 딜레이 추가
         esp_rom_delay_us(100);
     }
 }
@@ -192,9 +188,7 @@ void light_chage_color_dimming(const int step, const int duration, ARGB from_col
 
         limit_val(&cur_color, &argb_accum, to_color, is_turn_on);
 
-        // change_color(cur_color, LED_CNT);
         change_color(cur_color, LED_CNT);
-        // esp_rom_delay_us(DELAY_TIME);
     }
 
     change_color(to_color, LED_CNT);
@@ -203,6 +197,11 @@ void light_chage_color_dimming(const int step, const int duration, ARGB from_col
 void light_on()
 {
     set_light_state(true);
+
+    led_status_t status = get_led_status();
+    status.is_on = 1;
+    set_led_status(status);
+
     ARGB to_color = {.code = read_color_nvs()};
     change_color(to_color, LED_CNT);
 }
@@ -210,13 +209,49 @@ void light_on()
 void light_off()
 {
     set_light_state(false);
+
+    led_status_t status = get_led_status();
+    status.is_on = 0;
+    set_led_status(status);
+
     ARGB color = {.code = Black};
     change_color(color, LED_CNT);
+}
+
+void light_on_blink(uint32_t blink_times, uint32_t blink_term_ms)
+{
+    ESP_LOGI(TAG, "light_blink_on(), blink times: %" PRIu32 ", blink_term_ms: %" PRIu32, blink_times, blink_term_ms);
+
+    for (uint32_t i = 0; i < blink_times; i++)
+    {
+        light_off();
+        vTaskDelay(pdMS_TO_TICKS(blink_term_ms));
+        light_on();
+        vTaskDelay(pdMS_TO_TICKS(blink_term_ms));
+    }
+}
+
+void light_off_blink(uint32_t blink_times, uint32_t blink_term_ms)
+{
+    ESP_LOGI(TAG, "light_blink_off(), blink times: %" PRIu32 ", blink_term_ms: %" PRIu32, blink_times, blink_term_ms);
+    for (uint32_t i = 0; i < blink_times; i++)
+    {
+        light_on();
+        vTaskDelay(pdMS_TO_TICKS(blink_term_ms));
+
+        light_off();
+        vTaskDelay(pdMS_TO_TICKS(blink_term_ms));
+    }
 }
 
 void light_on_dimming()
 {
     set_light_state(true);
+
+    led_status_t status = get_led_status();
+    status.is_on = 1;
+    set_led_status(status);
+
     ESP_LOGI(TAG, "light_on_dimming()");
     ARGB to_color = {.code = read_color_nvs()};
     ARGB from_color = {.code = 0};
@@ -229,6 +264,11 @@ void light_on_dimming()
 void light_off_dimming()
 {
     set_light_state(false);
+
+    led_status_t status = get_led_status();
+    status.is_on = 0;
+    set_led_status(status);
+
     ESP_LOGI(TAG, "light_off_dimming()");
     ARGB from_color = {.code = read_color_nvs()};
     ARGB to_color = {.code = 0};
@@ -236,12 +276,6 @@ void light_off_dimming()
     const int step = 100;
     const int duration_us = 500000;
     light_chage_color_dimming(step, duration_us, from_color, to_color, false);
-}
-
-static void cont_brightness(uint8_t brightness)
-{
-    ESP_LOGI(TAG, "cont_brightness(%d)", (int)brightness);
-    //..
 }
 
 bool write_led_status(led_status_t *status)
@@ -285,19 +319,10 @@ bool ble_cont_light(led_status_t *status)
             light_off_dimming();
         }
     }
-    // if (cur_status.brightness != status->brightness)
-    // {
-    //     if (status->brightness > 0)
-    //     {
-    //         cont_brightness(status->brightness);
-    //     }
-    // }
-
     if (cur_status.color != status->color || cur_status.brightness != status->brightness)
     {
         if (status->color > 0)
         {
-            ARGB color = {.code = status->color};
             change_color_with_status(status);
         }
     }
@@ -307,47 +332,26 @@ bool ble_cont_light(led_status_t *status)
 
 void toggle_light()
 {
-    if (get_light_state())
-    {
-        light_off_dimming();
-    }
-    else
+    bool current_state = get_light_state();
+    bool new_state = !current_state;
+
+    set_light_state(new_state);
+
+    led_status_t status = get_led_status();
+    status.is_on = new_state ? 1 : 0;
+    set_led_status(status);
+
+    if (new_state)
     {
         light_on_dimming();
     }
+    else
+    {
+        light_off_dimming();
+    }
+
+    printf("toggle_light: %s (states synced)\n", new_state ? "ON" : "OFF");
 }
-
-// void darker_light()
-// {
-//     int cnt = using_led_cnt - CONT_STEP;
-
-//     if(cnt < 0)
-//         cnt = 0;
-
-//     using_led_cnt = cnt;
-
-//     ARGB color;
-//     color.code = White;
-
-//     printf("less light : %d\n", using_led_cnt);
-//     light_chage_color(color, cnt);
-// }
-
-// void brighter_light()
-// {
-//     int cnt = using_led_cnt + CONT_STEP;
-
-//     if(cnt > LED_CNT - 1 )
-//         cnt = LED_CNT -1;
-
-//     using_led_cnt = cnt;
-
-//     printf("more light : %d\n", using_led_cnt);
-//     ARGB color;
-//     color.code = White;
-
-//     light_chage_color(color, cnt);
-// }
 
 void light_init()
 {
@@ -362,10 +366,6 @@ void light_init()
 
     ESP_LOGI(TAG, "Install led strip encoder");
     ESP_ERROR_CHECK(rmt_new_led_strip_encoder(&encoder_config, &led_encoder));
-
-    // ARGB color = {.code = read_color_nvs()};
-    // change_color(color, LED_CNT);
-
     ESP_LOGI(TAG, "Enable RMT TX channel");
     ESP_ERROR_CHECK(rmt_enable(led_chan));
 
@@ -373,26 +373,6 @@ void light_init()
     ARGB color = {.code = read_color_nvs()};
     change_color(color, LED_CNT);
 }
-
-// void get_current_color(uint8_t* color)
-// {
-//     color[0] = current_color.argb.alpha;
-//     color[1] = current_color.argb.red;
-//     color[2] = current_color.argb.green;
-//     color[3] = current_color.argb.blue;
-// }
-
-// bool get_light_on_off()
-// {
-//     return light_state;
-// }
-
-// ARGB fromRGB(uint8_t r, uint8_t g, uint8_t b)
-// {
-//     ARGB color = {.argb.alpha=0, .argb.red=r, .argb.blue=b, .argb.green=g, };
-
-//     return color;
-// }
 
 void led_strip_hsv2rgb(uint32_t h, uint32_t s, uint32_t v, uint32_t *r, uint32_t *g, uint32_t *b)
 {

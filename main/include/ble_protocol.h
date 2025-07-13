@@ -7,7 +7,9 @@ enum
     WRITE_STATUS = 0x0102,
     READ_STATUS = 0x0103,
     TEST_STATUS = 0x0104,
-
+    COLOR_CHANGE = 0x0105,
+    BRIGHTNESS_CHANGE = 0x0106,
+    SYNC_TIME = 0x0107,
     WRITE_DEV_NAME = 0x0201,
     WRITE_PASSKEY = 0x0202,
 };
@@ -26,13 +28,6 @@ typedef struct
     uint8_t data[HANDLER_RSP_SZ];
     uint8_t len;
 } handler_rsp_t;
-
-// typedef struct
-// {
-//     uint32_t is_on;
-//     uint32_t brightness;
-//     uint32_t color; // argb
-// } led_status_t;
 
 typedef struct
 {

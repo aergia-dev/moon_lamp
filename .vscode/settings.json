@@ -8,6 +8,24 @@
         "string.h": "c",
         "sleep_light.h": "c",
         "gap.h": "c",
-        "common_info.h": "c"
-    }
+        "common_info.h": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "vector": "c",
+        "types.h": "c",
+        "_useconds_t.h": "c",
+        "time.h": "c",
+        "gptimer.h": "c"
+    },
+
+    "idf.adapterTargetName": "esp32c3",
+    "idf.customExtraPaths": "",
+    "idf.customExtraVars": "",
+    "idf.espIdfPath": "/Users/b4/esp/esp-idf",
+    "idf.toolsPath": "/Users/b4/.espressif",
+    "cmake.configureOnOpen": false,
+    "C_Cpp.intelliSenseEngine": "Tag Parser",
+    "idf.port": "/dev/tty.usbmodem101",
+    "idf.flashType": "UART"
 }

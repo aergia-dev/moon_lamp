@@ -1,11 +1,12 @@
 #include "string.h"
 #include "nvs_storage.h"
 #include "common_info.h"
+#include "time.h"
 #include "gap.h"
 const uint32_t GPIO_INPUT_IO_0 = 10;
 #define DEV_NAME_LEN 15
-// const uint32_t LED_CONT = 10;
-// const uint32_t LED_CONT_GPIO = 21;
+
+static const char *TAG = "common_info";
 
 char device_name[DEV_NAME_LEN] = {};
 static uint32_t ble_passkey = 0;
@@ -20,6 +21,12 @@ static led_status_t _led_status = {
     .is_on = 0,
     .brightness = 0,
     .color = 0,
+    .is_time_synced = false,
+    .power_on_hour = 0,
+    .power_on_minute = 0,
+    .power_off_hour = 0,
+    .power_off_minute = 0,
+    .delay_power_off_min = 0,
 };
 
 led_status_t get_led_status(void)
@@ -32,6 +39,11 @@ void set_led_status(led_status_t s)
     _led_status.is_on = s.is_on;
     _led_status.brightness = s.brightness;
     _led_status.color = s.color;
+    _led_status.power_on_hour = s.power_on_hour;
+    _led_status.power_on_minute = s.power_on_minute;
+    _led_status.power_off_hour = s.power_off_hour;
+    _led_status.power_off_minute = s.power_off_minute;
+    _led_status.delay_power_off_min = s.delay_power_off_min;
 }
 
 void init_common_info()
@@ -81,13 +93,14 @@ bool set_ble_passkey(uint32_t passkey)
     write_ble_pwd_nvs(passkey);
     return true;
 }
+void set_time_synced(bool is_synced)
+{
+    _led_status.is_time_synced = is_synced;
+}
 
-// uint32_t get_led_count()
-// {
-//     return LED_CONT;
-// }
-
-// uint32_t get_led_cont_gpio()
-// {
-//     return LED_CONT_GPIO;
-// }
+void get_local_time(struct tm *t)
+{
+    time_t now;
+    time(&now);
+    localtime_r(&now, t);
+}

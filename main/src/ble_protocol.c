@@ -7,6 +7,7 @@
 #include <string.h>
 #include "sleep_light.h"
 #include "common_info.h"
+#include <sys/time.h>
 
 static const char *TAG = "BLE_PROTOCOL";
 
@@ -25,6 +26,9 @@ static void handler_reset(handler_req_t *req, handler_rsp_t *rsp)
 
 static void handler_write_status(handler_req_t *req, handler_rsp_t *rsp)
 {
+
+    ESP_LOGI(TAG, "handler_write_status, req->len: %d", req->len);
+
     if (req->len != sizeof(led_status_t))
     {
         ESP_LOGE(TAG, "handler_write_status - data size is not matched, got %d but should be %d", req->len, sizeof(led_status_t));
@@ -45,23 +49,75 @@ static void handler_read_status(handler_req_t *req, handler_rsp_t *rsp)
 {
     led_status_t status;
 
-    status.is_on = get_light_state();
+    bool actual_light_state = get_light_state();
+    led_status_t stored_status = get_led_status();
+
+    if ((stored_status.is_on != 0) != actual_light_state)
+    {
+        ESP_LOGW(TAG, "State mismatch detected! Stored: %" PRIu32 ",  Actual: %d",
+                 stored_status.is_on, actual_light_state);
+
+        stored_status.is_on = actual_light_state ? 1 : 0;
+        set_led_status(stored_status);
+
+        ESP_LOGI(TAG, "States synchronized");
+    }
+
+    status.is_on = actual_light_state ? 1 : 0;
     status.brightness = get_brightness();
     status.color = get_saved_color_uint32();
+
+    status.power_on_hour = 0;
+    status.power_on_minute = 0;
+    status.power_off_hour = 0;
+    status.power_off_minute = 0;
+    status.delay_power_off_min = 0;
 
     rsp->is_success = true;
     if (HANDLER_RSP_SZ >= sizeof(led_status_t))
     {
         memcpy(rsp->data, &status, sizeof(led_status_t));
         rsp->len = sizeof(led_status_t);
-        ESP_LOGI(TAG, "read led status");
-        ESP_LOGI(TAG, "is_on: %d, brightness: %d, color: %lu", (int)status.is_on, (int)status.brightness, status.color);
+        ESP_LOGI(TAG, "read led status (synced)");
+        ESP_LOGI(TAG, "is_on: %d, brightness: %d, color: %lu",
+                 (int)status.is_on, (int)status.brightness, status.color);
     }
     else
     {
         rsp->len = 0;
         ESP_LOGE(TAG, "error: should increase rsp data size to %d", sizeof(led_status_t));
     }
+}
+
+static void handler_sync_time(handler_req_t *req, handler_rsp_t *rsp)
+{
+    ESP_LOGI(TAG, "handler_sync_time, req->len: %d", req->len);
+
+    rsp->is_success = false;
+    if (req->len == sizeof(uint64_t))
+    {
+        uint64_t ts;
+        memcpy(&ts, req->data, sizeof(uint64_t));
+        struct timeval tv;
+        tv.tv_sec = (time_t)ts; // Convert milliseconds to
+        settimeofday(&tv, NULL);
+
+        struct tm timeinfo;
+
+        // 일본하고 시간대가 같음. "Asia/Seoul"이 안먹힘
+        setenv("TZ", "JST-9", 1);
+        tzset();
+
+        localtime_r(&tv.tv_sec, &timeinfo);
+
+        ESP_LOGI(TAG, "시간 동기화 완료: %04d-%02d-%02d %02d:%02d:%02d",
+                 timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+                 timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+        set_time_synced(true);
+        rsp->is_success = true;
+    }
+
+    rsp->len = 0;
 }
 
 static void handler_test_color(handler_req_t *req, handler_rsp_t *rsp)
@@ -118,13 +174,14 @@ static void handler_write_passkey(handler_req_t *req, handler_rsp_t *rsp)
     }
 }
 
-const cmd_map_t cmd_handlers[] = {
+static const cmd_map_t cmd_handlers[] = {
     {RESET, handler_reset},
     {WRITE_STATUS, handler_write_status},
     {READ_STATUS, handler_read_status},
     {TEST_STATUS, handler_test_color},
     {WRITE_DEV_NAME, handler_write_dev_name},
     {WRITE_PASSKEY, handler_write_passkey},
+    {SYNC_TIME, handler_sync_time}, // data type: timeval
     {0, NULL},
 };
 

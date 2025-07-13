@@ -170,27 +170,14 @@ typedef struct
   float alpha;
 } ARGB_float;
 
-typedef enum
-{
-  DIMMING = -1,
-  BRIGHTER = 1,
-} Brightness_direction;
-
 void light_init();
 void light_on();
 void light_off();
 void light_on_dimming();
 void light_off_dimming();
+void light_on_blink(uint32_t blink_times, uint32_t blink_term_ms);
+void light_off_blink(uint32_t blink_times, uint32_t blink_term_ms);
 void toggle_light();
-// void darker_light();
-// void brighter_light();
-// void light_chage_color(ARGB color, int cnt);
-// void light_change_rgb(uint8_t r, uint8_t g, uint8_t b);
-// void save_color_nvs(uint8_t r, uint8_t g, uint8_t b);
-// void get_current_color(uint8_t *color);
-// bool get_light_on_off();
-// ARGB fromRGB(uint8_t r, uint8_t g, uint8_t b);
-
 bool ble_cont_light_write(led_status_t *status);
 bool ble_cont_light(led_status_t *status);
 void set_light_state(bool is_on);
